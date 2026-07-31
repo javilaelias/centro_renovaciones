@@ -1,0 +1,25 @@
+# Dependencias
+node_modules/
+server/node_modules/
+
+# Base de datos local (contiene credenciales) — nunca va a la imagen
+server/data/
+
+# Git y entornos
+.git/
+.gitignore
+.env
+.env.*
+!.env.example
+
+# Documentación y config de build
+README.md
+Dockerfile
+docker-compose*.yml
+
+# Artefactos de pruebas
+test_results.txt
+test_server.js
+start_and_test.js
+health_check.txt
+*.log

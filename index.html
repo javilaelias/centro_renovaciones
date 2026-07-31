@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Centro de Renovaciones</title>
+  <meta name="description" content="Panel centralizado para gestionar y recordar renovaciones de dominios, SSL, hosting, licencias y más." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script>
+    (function(){
+      var t = localStorage.getItem('centro_theme');
+      if (!t) t = matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light';
+      if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+      var c = localStorage.getItem('centro_theme_color');
+      if (c && c !== 'default') document.documentElement.setAttribute('data-theme-color', c);
+    })();
+  </script>
+</head>
+<body>
+  <!-- Login Page -->
+  <div class="login-page" id="loginPage">
+    <div class="login-particles"></div>
+    <div class="login-container">
+      <div class="login-header">
+        <span class="login-icon">&#x21BB;</span>
+        <h1>Centro de Renovaciones</h1>
+        <p>Inicia sesi&oacute;n para gestionar tus renovaciones</p>
+      </div>
+      <form class="login-form" id="loginForm">
+        <div class="form-group">
+          <label class="form-label">Usuario</label>
+          <input type="text" id="loginUsername" class="form-input" placeholder="admin" autocomplete="username" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contrase&ntilde;a</label>
+          <input type="password" id="loginPassword" class="form-input" placeholder="admin" autocomplete="current-password" required />
+        </div>
+        <div class="login-error" id="loginError"></div>
+        <button type="submit" class="btn btn-primary login-btn" id="loginBtn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Iniciar sesi&oacute;n
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- App Content (hidden until authenticated) -->
+  <div class="app-content" id="appContent" style="display:none;">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-bg"></div>
+    <div class="container header-content">
+      <div class="header-top">
+        <div class="logo">
+          <span class="logo-icon">&#x21BB;</span>
+          <div class="logo-text">
+            <h1>Centro de Renovaciones</h1>
+            <span class="logo-sub">Nunca más pierdas una renovación</span>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="search-wrapper">
+            <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="searchInput" placeholder="Buscar renovaciones..." class="search-input" />
+          </div>
+          <button class="theme-toggle" id="themeToggle" aria-label="Cambiar tema" title="Cambiar modo oscuro/claro">
+            <svg class="theme-icon-light" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+            <svg class="theme-icon-dark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </button>
+          <div class="theme-color-wrapper">
+            <button class="theme-color-toggle" id="themeColorToggle" aria-label="Cambiar color de acento" title="Cambiar tema de color">
+              <span id="themeColorDot" style="display:block;width:100%;height:100%;border-radius:50%;background:var(--accent-500);"></span>
+            </button>
+            <div class="theme-color-panel" id="themeColorPanel" style="display:none;">
+              <div class="theme-panel-title">Tema de color</div>
+              <div class="theme-swatches">
+                <button class="theme-swatch active" data-color="default">
+                  <span class="theme-swatch-dot" style="background:#3b82f6;"></span>
+                  <span class="theme-swatch-name">Clásico</span>
+                </button>
+                <button class="theme-swatch" data-color="emerald">
+                  <span class="theme-swatch-dot" style="background:#10b981;"></span>
+                  <span class="theme-swatch-name">Esmeralda</span>
+                </button>
+                <button class="theme-swatch" data-color="purple">
+                  <span class="theme-swatch-dot" style="background:#8b5cf6;"></span>
+                  <span class="theme-swatch-name">Púrpura</span>
+                </button>
+                <button class="theme-swatch" data-color="rose">
+                  <span class="theme-swatch-dot" style="background:#f43f5e;"></span>
+                  <span class="theme-swatch-name">Rosa</span>
+                </button>
+                <button class="theme-swatch" data-color="amber">
+                  <span class="theme-swatch-dot" style="background:#f59e0b;"></span>
+                  <span class="theme-swatch-name">Ámbar</span>
+                </button>
+                <button class="theme-swatch" data-color="teal">
+                  <span class="theme-swatch-dot" style="background:#14b8a6;"></span>
+                  <span class="theme-swatch-name">Teal</span>
+                </button>
+                <button class="theme-swatch" data-color="ocean">
+                  <span class="theme-swatch-dot" style="background:#06b6d4;"></span>
+                  <span class="theme-swatch-name">Océano</span>
+                </button>
+                <button class="theme-swatch" data-color="indigo">
+                  <span class="theme-swatch-dot" style="background:#6366f1;"></span>
+                  <span class="theme-swatch-name">Índigo</span>
+                </button>
+              </div>
+            </div>
+          </div>
+          <div class="user-actions">
+            <span class="user-chip" id="userChip" title="Usuario actual">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              <span id="userName">admin</span>
+            </span>
+            <button class="theme-toggle" id="changePassBtn" aria-label="Cambiar contraseña" title="Cambiar contraseña">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </button>
+            <button class="theme-toggle logout-btn" id="logoutBtn" aria-label="Cerrar sesión" title="Cerrar sesión">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            </button>
+          </div>
+          <button class="btn btn-secondary" id="viewToggle" aria-label="Cambiar vista" title="Vista calendario">
+            <svg class="view-icon-list" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <svg class="view-icon-grid" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          </button>
+          <button class="btn btn-primary" id="addBtn" aria-label="Agregar renovación">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            <span class="btn-text">Nueva</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="container">
+      <!-- Stats Bar -->
+      <section class="stats-bar" id="statsBar">
+        <div class="stat-card stat-all">
+          <span class="stat-number" id="statTotal">0</span>
+          <span class="stat-label">Total</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+        <div class="stat-card stat-ok">
+          <span class="stat-number" id="statOk">0</span>
+          <span class="stat-label">En orden</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+        <div class="stat-card stat-soon">
+          <span class="stat-number" id="statSoon">0</span>
+          <span class="stat-label">Próximas</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+        <div class="stat-card stat-warning">
+          <span class="stat-number" id="statWarning">0</span>
+          <span class="stat-label">&iexcl;Alerta!</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+        <div class="stat-card stat-urgent">
+          <span class="stat-number" id="statUrgent">0</span>
+          <span class="stat-label">Urgente</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+        <div class="stat-card stat-expired">
+          <span class="stat-number" id="statExpired">0</span>
+          <span class="stat-label">Vencidas</span>
+          <div class="stat-progress"><div class="stat-progress-bar"></div></div>
+        </div>
+      </section>
+
+      <!-- Category Filter -->
+      <section class="filters-bar">
+        <div class="filter-chips" id="filterChips">
+          <button class="chip chip-active" data-filter="all">Todas</button>
+          <button class="chip" data-filter="domain">&#127760; Dominios</button>
+          <button class="chip" data-filter="ssl">&#128274; SSL</button>
+          <button class="chip" data-filter="hosting">&#128421; Hosting</button>
+          <button class="chip" data-filter="license">&#128196; Licencias</button>
+          <button class="chip" data-filter="insurance">&#128737; Seguros</button>
+          <button class="chip" data-filter="certificate">&#127891; Certificados</button>
+          <button class="chip" data-filter="tuition">&#127979; Colegiaturas</button>
+          <button class="chip" data-filter="subscription">&#128176; Suscripciones</button>
+          <button class="chip" data-filter="warranty">&#128290; Garantías</button>
+        </div>
+        <div class="sort-controls">
+          <label for="sortSelect" class="sort-label">Ordenar:</label>
+          <select id="sortSelect" class="sort-select">
+            <option value="days-asc">Fecha (próximos)</option>
+            <option value="days-desc">Fecha (lejanos)</option>
+            <option value="name">Nombre (A-Z)</option>
+            <option value="category">Categoría</option>
+          </select>
+        </div>
+      </section>
+
+      <!-- Timeline Alert Bar -->
+      <section class="timeline-bar">
+        <div class="timeline-labels">
+          <span class="tl-label active" data-days="90">90 días</span>
+          <span class="tl-label" data-days="60">60 días</span>
+          <span class="tl-label" data-days="30">30 días</span>
+          <span class="tl-label urgent" data-days="7">7 días</span>
+          <span class="tl-label critical" data-days="1">1 día</span>
+        </div>
+        <div class="timeline-track">
+          <div class="timeline-segment" style="flex:30"></div>
+          <div class="timeline-segment" style="flex:30"></div>
+          <div class="timeline-segment" style="flex:23"></div>
+          <div class="timeline-segment" style="flex:13"></div>
+          <div class="timeline-segment" style="flex:4"></div>
+        </div>
+        <div class="timeline-ticks">
+          <span class="tick" style="left:0%">90</span>
+          <span class="tick" style="left:30%">60</span>
+          <span class="tick" style="left:60%">30</span>
+          <span class="tick" style="left:83%">7</span>
+          <span class="tick" style="left:96%">1</span>
+        </div>
+      </section>
+
+      <!-- View Toggle Tab -->
+      <div class="view-tabs">
+        <button class="view-tab view-tab-active" data-view="list" id="listViewTab">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          Lista
+        </button>
+        <button class="view-tab" data-view="calendar" id="calendarViewTab">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          Calendario
+        </button>
+      </div>
+
+      <!-- Items Grid (List View) -->
+      <section class="items-section" id="itemsSection">
+        <div class="section-header">
+          <h2 class="section-title" id="sectionTitle">Todas las renovaciones</h2>
+          <span class="section-count" id="sectionCount">0 ítems</span>
+        </div>
+        <div class="items-grid" id="itemsGrid">
+          <!-- Items rendered by JS -->
+        </div>
+        <div class="empty-state" id="emptyState" style="display:none;">
+          <div class="empty-icon">&#128203;</div>
+          <h3>No hay renovaciones</h3>
+          <p>Agrega tu primer elemento para empezar a gestionar tus renovaciones, o carga datos de ejemplo para ver cómo funciona.</p>
+          <div class="empty-actions">
+            <button class="btn btn-primary" id="emptyAddBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Agregar renovación
+            </button>
+            <button class="btn btn-secondary" id="emptyDemoBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              Datos de ejemplo
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Calendar View -->
+      <section class="calendar-section" id="calendarSection" style="display:none;">
+        <div class="calendar-header">
+          <button class="cal-nav-btn" id="calPrev" title="Mes anterior">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="cal-header-center">
+            <h3 class="calendar-title" id="calendarTitle">Julio 2026</h3>
+            <span class="cal-month-count" id="calMonthCount" title="Ir al primer día del mes visible" role="button" tabindex="0" aria-label="Ir al primer día del mes visible">0</span>
+            <div class="cal-month-year-picker">
+              <select id="calMonthSelect" class="cal-month-select" aria-label="Seleccionar mes" title="Seleccionar mes"></select>
+              <select id="calYearSelect" class="cal-year-select" aria-label="Seleccionar año" title="Seleccionar año"></select>
+              <button class="cal-today-btn" id="calTodayBtn" title="Volver al mes actual" aria-label="Ir al mes actual">Hoy</button>
+            </div>
+          </div>
+          <button class="cal-nav-btn" id="calNext" title="Mes siguiente">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <!-- Category Breakdown (visible month) -->
+        <div class="cal-category-breakdown" id="calCategoryBreakdown" aria-label="Desglose por categoría del mes visible"></div>
+        <!-- Urgency Breakdown (visible month) -->
+        <div class="cal-urgency-breakdown" id="calUrgencyBreakdown" aria-label="Desglose por urgencia del mes visible"></div>
+        <!-- Calendar Filters -->
+        <div class="cal-filters">
+          <div class="cal-filters-row">
+            <div class="cal-search-wrapper">
+              <svg class="cal-search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="calSearchInput" class="cal-search-input" placeholder="Buscar en calendario..." />
+            </div>
+            <div class="cal-filter-info">
+              <span class="cal-filter-count" id="calFilterCount"></span>
+              <div class="cal-export-actions">
+                <button class="cal-export-btn" onclick="exportCsv()" title="Exportar filtrados a CSV">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  CSV
+                </button>
+                <button class="cal-export-btn" onclick="exportPdf()" title="Exportar filtrados a PDF">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="16" x2="16" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                  PDF
+                </button>
+              </div>
+              <button class="cal-clear-filters" id="calClearFilters" style="display:none;">Limpiar filtros</button>
+            </div>
+          </div>
+          <div class="cal-filters-row">
+            <div class="cal-date-chips" id="calDateChips">
+              <button class="cal-chip cal-chip-active" data-filter="all">Todo</button>
+              <button class="cal-chip" data-filter="month">Este mes</button>
+              <button class="cal-chip" data-filter="30d">30 días</button>
+              <button class="cal-chip" data-filter="90d">90 días</button>
+              <button class="cal-chip" data-filter="custom">Personalizado</button>
+            </div>
+            <div class="cal-urgency-chips" id="calUrgencyChips">
+              <button class="cal-chip cal-chip-active" data-filter="all">Todas</button>
+              <button class="cal-chip" data-filter="ok"><span class="cal-dot dot-ok"></span>OK</button>
+              <button class="cal-chip" data-filter="soon"><span class="cal-dot dot-soon"></span>Próx</button>
+              <button class="cal-chip" data-filter="warning"><span class="cal-dot dot-warning"></span>Alerta</button>
+              <button class="cal-chip" data-filter="urgent"><span class="cal-dot dot-urgent"></span>Urgente</button>
+              <button class="cal-chip" data-filter="expired"><span class="cal-dot dot-expired"></span>Vencido</button>
+            </div>
+          </div>
+          <div class="cal-custom-range" id="calCustomRange" style="display:none;">
+            <label class="cal-range-label">Desde:</label>
+            <input type="date" id="calDateFrom" class="cal-range-input" />
+            <label class="cal-range-label">Hasta:</label>
+            <input type="date" id="calDateTo" class="cal-range-input" />
+          </div>
+        </div>
+        <div class="calendar-weekdays">
+          <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+          <!-- Days rendered by JS -->
+        </div>
+        <div class="calendar-legend" id="calendarLegend">
+          <span class="legend-item"><span class="legend-dot dot-ok"></span> En orden (+60d)</span>
+          <span class="legend-item"><span class="legend-dot dot-soon"></span> Próximo (30-60d)</span>
+          <span class="legend-item"><span class="legend-dot dot-warning"></span> Alerta (7-30d)</span>
+          <span class="legend-item"><span class="legend-dot dot-urgent"></span> Urgente (&lt;7d)</span>
+          <span class="legend-item"><span class="legend-dot dot-expired"></span> Vencido</span>
+        </div>
+        <!-- Calendar Day Detail Popover -->
+        <div class="cal-day-detail" id="calDayDetail" style="display:none;">
+          <div class="cal-day-header">
+            <span class="cal-day-date" id="calDayDate"></span>
+            <button class="cal-day-close" id="calDayClose">&times;</button>
+          </div>
+          <div class="cal-day-cats" id="calDayCats"></div>
+          <div class="cal-day-urgency" id="calDayUrgency"></div>
+          <div class="cal-day-items" id="calDayItems"></div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Modal Overlay -->
+  <div class="modal-overlay" id="modalOverlay" style="display:none;">
+    <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Nueva renovación</h2>
+        <button class="modal-close" id="modalClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="itemForm" class="modal-body" novalidate>
+        <input type="hidden" id="itemId" />
+        
+        <div class="form-group">
+          <label for="itemName" class="form-label">Nombre *</label>
+          <input type="text" id="itemName" class="form-input" placeholder="Ej: midominio.com" required autocomplete="off" />
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itemCategory" class="form-label">Categoría *</label>
+            <select id="itemCategory" class="form-input" required>
+              <option value="" disabled selected>Seleccionar...</option>
+              <option value="domain">&#127760; Dominio</option>
+              <option value="ssl">&#128274; SSL</option>
+              <option value="hosting">&#128421; Hosting</option>
+              <option value="license">&#128196; Licencia</option>
+              <option value="insurance">&#128737; Seguro</option>
+              <option value="certificate">&#127891; Certificado</option>
+              <option value="tuition">&#127979; Colegiatura</option>
+              <option value="subscription">&#128176; Suscripción</option>
+              <option value="warranty">&#128290; Garantía</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="itemExpiry" class="form-label">Fecha de vencimiento *</label>
+            <input type="date" id="itemExpiry" class="form-input" required />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itemCost" class="form-label">Costo ($)</label>
+            <input type="number" id="itemCost" class="form-input" placeholder="0.00" min="0" step="0.01" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="itemProvider" class="form-label">Proveedor / URL</label>
+            <input type="url" id="itemProvider" class="form-input" placeholder="https://..." autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="itemNotes" class="form-label">Notas</label>
+          <textarea id="itemNotes" class="form-input form-textarea" placeholder="Información adicional..." rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Alertas</label>
+          <div class="alert-options">
+            <label class="alert-check">
+              <input type="checkbox" checked disabled />
+              <span class="alert-check-label">&#128276; Push (navegador)</span>
+            </label>
+            <label class="alert-check">
+              <input type="checkbox" id="alertEmail" />
+              <span class="alert-check-label">&#9993; Email</span>
+            </label>
+            <label class="alert-check">
+              <input type="checkbox" id="alertWhatsApp" />
+              <span class="alert-check-label">&#128242; WhatsApp</span>
+            </label>
+            <label class="alert-check">
+              <input type="checkbox" id="alertTelegram" />
+              <span class="alert-check-label">&#128172; Telegram</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modalCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="modalSave">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settingsOverlay" style="display:none;">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <div class="modal-header">
+        <h2 id="settingsTitle">&#x2699;&#xFE0F; Configuraci&oacute;n de notificaciones</h2>
+        <button class="modal-close" id="settingsClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="settingsForm" class="modal-body">
+        <!-- === EMAIL SECTION === -->
+        <div class="settings-section-title">&#x2709; Notificaciones por Email</div>
+        <div class="settings-info">
+          <p>Configura un servidor SMTP para recibir alertas autom&aacute;ticas por email cuando tus renovaciones est&eacute;n pr&oacute;ximas a vencer.</p>
+          <p class="settings-rec">Recomendado: <a href="https://resend.com" target="_blank" rel="noopener">Resend</a> (gratuito hasta 100 emails/d&iacute;a), SendGrid, o cualquier servidor SMTP.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label-toggle">
+            <input type="checkbox" id="smtpEnabled" />
+            <span>Activar notificaciones por email</span>
+          </label>
+        </div>
+
+        <div id="smtpFields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="smtpHost" class="form-label">Servidor SMTP</label>
+              <input type="text" id="smtpHost" class="form-input" placeholder="smtp.resend.com" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="smtpPort" class="form-label">Puerto</label>
+              <input type="number" id="smtpPort" class="form-input" placeholder="587" min="1" max="65535" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="smtpUser" class="form-label">Usuario / Email</label>
+              <input type="text" id="smtpUser" class="form-input" placeholder="tu@email.com" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="smtpPass" class="form-label">Contrase&ntilde;a / API Key</label>
+              <input type="password" id="smtpPass" class="form-input" placeholder="sk_..." autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="smtpFromEmail" class="form-label">Email de destino (para alertas)</label>
+              <input type="email" id="smtpFromEmail" class="form-input" placeholder="tualerta@email.com" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="smtpFromName" class="form-label">Nombre del remitente</label>
+              <input type="text" id="smtpFromName" class="form-input" placeholder="Centro de Renovaciones" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:4px;">
+            <button type="button" class="btn btn-secondary" id="testEmailBtn" style="font-size:0.8rem;width:100%;">
+              &#x1F4E8; Enviar correo de prueba
+            </button>
+          </div>
+        </div>
+
+        <hr class="settings-divider" />
+
+        <!-- === SMS SECTION === -->
+        <div class="settings-section-title">&#x1F4F1; Notificaciones por SMS (Twilio)</div>
+        <div class="settings-info">
+          <p>Configura Twilio para recibir alertas SMS cuando tus renovaciones est&eacute;n pr&oacute;ximas a vencer.</p>
+          <p class="settings-rec">Necesitas una cuenta en <a href="https://twilio.com" target="_blank" rel="noopener">Twilio</a> (gratuito con cr&eacute;dito inicial de $15).</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label-toggle">
+            <input type="checkbox" id="twilioEnabled" />
+            <span>Activar notificaciones por SMS</span>
+          </label>
+        </div>
+
+        <div id="twilioFields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="twilioAccountSid" class="form-label">Account SID</label>
+              <input type="text" id="twilioAccountSid" class="form-input" placeholder="ACxxxxxxxxxx..." autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="twilioAuthToken" class="form-label">Auth Token</label>
+              <input type="password" id="twilioAuthToken" class="form-input" placeholder="********" autocomplete="off" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="twilioFromNumber" class="form-label">N&uacute;mero Twilio (origen)</label>
+              <input type="text" id="twilioFromNumber" class="form-input" placeholder="+1234567890" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="twilioToNumber" class="form-label">Tu n&uacute;mero (destino)</label>
+              <input type="tel" id="twilioToNumber" class="form-input" placeholder="+521234567890" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:4px;">
+            <button type="button" class="btn btn-secondary" id="testSmsBtn" style="font-size:0.8rem;width:100%;">
+              &#x1F4F1; Enviar SMS de prueba
+            </button>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="settingsCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="settingsSave">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Change Password Modal -->
+  <div class="modal-overlay" id="passwordOverlay" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="passwordTitle">
+      <div class="modal-header">
+        <h2 id="passwordTitle">Cambiar contrase&ntilde;a</h2>
+        <button class="modal-close" id="passwordClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <form id="passwordForm" class="modal-body" novalidate>
+        <div class="form-group">
+          <label for="currentPassword" class="form-label">Contrase&ntilde;a actual</label>
+          <input type="password" id="currentPassword" class="form-input" required autocomplete="current-password" />
+        </div>
+        <div class="form-group">
+          <label for="newPassword" class="form-label">Nueva contrase&ntilde;a</label>
+          <input type="password" id="newPassword" class="form-input" required minlength="4" autocomplete="new-password" />
+        </div>
+        <div class="form-group">
+          <label for="confirmPassword" class="form-label">Confirmar nueva contrase&ntilde;a</label>
+          <input type="password" id="confirmPassword" class="form-input" required minlength="4" autocomplete="new-password" />
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="passwordCancel">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="passwordSave">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Delete Confirmation -->
+  <div class="modal-overlay" id="confirmOverlay" style="display:none;">
+    <div class="modal modal-sm" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+      <div class="modal-header">
+        <h2 id="confirmTitle">Confirmar eliminación</h2>
+        <button class="modal-close" id="confirmClose" aria-label="Cerrar">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmText">¿Estás seguro de eliminar esta renovación?</p>
+        <div class="modal-footer">
+          <button class="btn btn-secondary" id="confirmCancel">Cancelar</button>
+          <button class="btn btn-danger" id="confirmDelete">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  </div><!-- end app-content -->
+
+  <script src="script.js"></script>
+</body>
+</html>
