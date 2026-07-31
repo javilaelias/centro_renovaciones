@@ -4,9 +4,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 
 ![Stack](https://img.shields.io/badge/Node.js-20-339933) ![Stack](https://img.shields.io/badge/Express-4-000000) ![DB](https://img.shields.io/badge/SQLite-sql.js-003B57) ![Deploy](https://img.shields.io/badge/Railway-ready-0B0D0E)
 
-[![Tests](https://img.shields.io/github/actions/workflow/status/USUARIO/REPO/test.yml?branch=main&label=Tests&logo=github&logoColor=white)](https://github.com/USUARIO/REPO/actions/workflows/test.yml)
-
-> ✏️ **Reemplaza `USUARIO/REPO`** por tu `owner/repo` real de GitHub en la línea del badge anterior (y en el enlace) cuando subas el repositorio. El badge muestra en vivo el resultado del workflow `test.yml` en la rama `main`.
+[![Tests](https://img.shields.io/github/actions/workflow/status/javilaelias/centro_renovaciones/test.yml?branch=main&label=Tests&logo=github&logoColor=white)](https://github.com/javilaelias/centro_renovaciones/actions/workflows/test.yml)
 
 ---
 
