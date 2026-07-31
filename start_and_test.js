@@ -1,6 +1,6 @@
 const { spawn } = require('child_process');
-const http = require('http');
 const path = require('path');
+const { createRequest, waitForServer } = require('./test_helpers');
 
 const SERVER_DIR = path.join(__dirname, 'server');
 const LOG_FILE = path.join(__dirname, 'test_results.txt');
@@ -11,44 +11,7 @@ function log(m) {
   process.stdout.write(m + '\n');
 }
 
-function request(method, urlPath, body, token) {
-  return new Promise((resolve, reject) => {
-    const opts = {
-      hostname: 'localhost',
-      port: 3001,
-      path: urlPath,
-      method: method,
-      headers: { 'Content-Type': 'application/json' }
-    };
-    if (token) opts.headers['Authorization'] = 'Bearer ' + token;
-    const data = body ? JSON.stringify(body) : null;
-    if (data) opts.headers['Content-Length'] = Buffer.byteLength(data);
-    const req = http.request(opts, (res) => {
-      let d = '';
-      res.on('data', c => d += c);
-      res.on('end', () => {
-        try { resolve({ status: res.statusCode, data: JSON.parse(d) }); }
-        catch(e) { resolve({ status: res.statusCode, raw: d }); }
-      });
-    });
-    req.on('error', e => reject(e));
-    if (data) req.write(data);
-    req.end();
-  });
-}
-
-async function waitForServer(maxWait = 10000) {
-  const start = Date.now();
-  while (Date.now() - start < maxWait) {
-    try {
-      await request('GET', '/api/health');
-      return true;
-    } catch(e) {
-      await new Promise(r => setTimeout(r, 500));
-    }
-  }
-  return false;
-}
+const request = createRequest(3001);
 
 async function runTests() {
   log('========================================');
@@ -123,12 +86,12 @@ server.on('error', (err) => {
 // Wait for server and run tests
 setTimeout(async () => {
   log('Waiting for server...');
-  const ready = await waitForServer(15000);
-  if (ready) {
+  try {
+    await waitForServer(request, { maxWait: 15000 });
     log('Server is ready!\n');
     await runTests();
-  } else {
-    log('✗ Server did not start in time');
+  } catch (e) {
+    log('✗ ' + e.message);
   }
   server.kill();
   log('\nServer stopped. Tests complete.');

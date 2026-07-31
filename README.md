@@ -10,7 +10,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 
 - **Login seguro** con JWT (tokens de 30 días).
 - **Vista lista y calendario** con filtros por categoría, urgencia, fecha y búsqueda.
-- **Alertas automáticas** por **Email (SMTP)** y **SMS/WhatsApp (Twilio)**, programadas diariamente a las 8:00 AM.
+- **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
 - **Envío manual** de recordatorios por WhatsApp, Telegram, Email, Push y exportación JSON/CSV/PDF.
 - **Importar/exportar** datos, datos de ejemplo, temas claro/oscuro y colores de acento.
 - **Cambio de contraseña** desde la interfaz y **logout** con un clic.
@@ -23,7 +23,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 | Backend   | Node.js 20 + Express 4                            |
 | Base datos| SQLite vía [sql.js](https://sql.js.org/) (archivo) |
 | Auth      | JWT + bcryptjs                                    |
-| Notificaciones | nodemailer (SMTP) · twilio (SMS) · node-cron |
+| Notificaciones | nodemailer (SMTP) · twilio (SMS) · Telegram Bot API · web-push (Push) · node-cron |
 
 ## 📁 Estructura del proyecto
 
@@ -32,6 +32,9 @@ centro_renovaciones/
 ├── index.html          # Frontend (SPA)
 ├── script.js           # Lógica del frontend
 ├── style.css           # Estilos
+├── test_helpers.js     # Helpers compartidos (request + waitForServer)
+├── test_server.js      # Suite de tests automatizada (npm test)
+├── start_and_test.js   # Script heredado de verificación manual
 ├── Dockerfile          # Imagen para producción (Railway)
 ├── railway.json        # Config de despliegue en Railway
 ├── .env.example        # Variables de entorno de ejemplo
@@ -43,8 +46,10 @@ centro_renovaciones/
         ├── authRoutes.js   # Login, verify, cambio de contraseña
         ├── routes.js       # CRUD de items, settings, seed, import
         ├── db.js           # Base de datos SQLite (sql.js)
-        ├── notifications.js# Alertas por email
+        ├── notifications.js# Orquestación de alertas (email + SMS + Telegram + Push)
         ├── sms.js          # Alertas por SMS (Twilio)
+        ├── telegram.js     # Alertas por Telegram (Bot API)
+        ├── push.js         # Alertas push del navegador (Web Push + VAPID)
         └── scheduler.js    # Tarea diaria (8:00 AM)
 ```
 
@@ -77,8 +82,10 @@ npm run dev
 | `PORT`       | No        | Puerto del servidor (por defecto `3001`; Railway lo inyecta solo). |
 | `JWT_SECRET` | **Sí**    | Secreto para firmar tokens JWT. Genera uno con `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. |
 | `TZ`         | No        | Zona horaria del contenedor (p. ej. `America/Mexico_City`). Afecta al scheduler diario de alertas (8:00 AM). Por defecto Railway usa UTC. |
+| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | No | Claves VAPID para notificaciones push. Si no se definen, el servidor las genera automáticamente y las persiste en la base de datos. |
 
-> Las credenciales **SMTP** y **Twilio** no van en variables de entorno: se configuran desde la interfaz (⚙️ **Configurar alertas**) y se guardan en la base de datos.
+> Las credenciales **SMTP**, **Twilio** y **Telegram** no van en variables de entorno: se configuran desde la interfaz (⚙️ **Configurar alertas**) y se guardan en la base de datos.
+> Las notificaciones **push** funcionan en el navegador y requieren HTTPS (o localhost) y permisos de notificación.
 > El archivo `.env.example` es solo referencia: define las variables directamente en tu sistema u hosting.
 
 ## ☁️ Despliegue en Railway
@@ -132,14 +139,31 @@ La app guarda todo en `server/data/centro.db` (SQLite). El filesystem de Railway
 
 ## 🧪 Pruebas
 
-Ejecuta la suite de pruebas automatizada (arranca el servidor, corre las pruebas y lo detiene):
+Ejecuta la suite de pruebas automatizada (arranca el servidor en un puerto de pruebas con una base de datos temporal, corre los tests y lo detiene):
 
 ```bash
-node start_and_test.js
-# Resultados en test_results.txt
+cd server
+npm test
 ```
 
-Cubre: healthcheck, login `admin/admin`, obtención de items, verificación de token, rechazo de contraseña incorrecta, rechazo sin autenticación y servicio del frontend.
+> La suite usa el runner nativo de Node (`node:test`), sin dependencias extra. Puedes elegir otro puerto con `TEST_PORT=3100 npm test` si el `3210` está ocupado.
+
+Cubre: healthcheck, login `admin/admin`, rechazo de contraseña incorrecta, rechazo sin autenticación, verificación de token, CRUD completo de items, validaciones, datos demo, settings enmascarados (sin fuga de `vapid_private_key`), clave VAPID, suscripciones push, verificación manual de alertas, servicio del frontend y del service worker, y cambio de contraseña.
+
+> Script heredado: `node start_and_test.js` sigue disponible (resultados en `test_results.txt`). Ambos scripts comparten los helpers HTTP de `test_helpers.js` (`request` y `waitForServer`).
+
+### 🔔 Configurar Telegram
+
+1. Crea un bot con [@BotFather](https://t.me/BotFather) y copia el token.
+2. Envía un mensaje a tu bot y obtén el chat ID con `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+3. En la app: ⚙️ **Configurar alertas** → **Telegram**, pega el token y el chat ID y activa la sección. Usa **Enviar mensaje de prueba** para verificar.
+4. Marca la casilla **Telegram** en cada renovación para recibir su alerta.
+
+### 🔔 Configurar Push (navegador)
+
+1. En ⚙️ **Configurar alertas** → **Push**, activa la sección y pulsa **Suscribirme a notificaciones**.
+2. Acepta el permiso del navegador. El servidor genera automáticamente las claves VAPID (o usa las variables `VAPID_*`).
+3. Las renovaciones con alertas activas dispararán notificaciones aunque la pestaña esté cerrada (requiere HTTPS).
 
 ## 🔧 Scripts disponibles
 

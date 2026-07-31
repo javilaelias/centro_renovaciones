@@ -101,6 +101,16 @@ function cacheDom() {
   dom.twilioToNumber = $('#twilioToNumber');
   dom.twilioFields = $('#twilioFields');
   dom.testSmsBtn = $('#testSmsBtn');
+  dom.telegramEnabled = $('#telegramEnabled');
+  dom.telegramBotToken = $('#telegramBotToken');
+  dom.telegramChatId = $('#telegramChatId');
+  dom.telegramFields = $('#telegramFields');
+  dom.testTelegramBtn = $('#testTelegramBtn');
+  dom.pushEnabled = $('#pushEnabled');
+  dom.pushFields = $('#pushFields');
+  dom.pushStatus = $('#pushStatus');
+  dom.pushSubscribeBtn = $('#pushSubscribeBtn');
+  dom.testPushBtn = $('#testPushBtn');
   dom.calendarSection = $('#calendarSection');
   dom.calendarTitle = $('#calendarTitle');
   dom.calMonthCount = $('#calMonthCount');
@@ -278,6 +288,63 @@ async function testSmsSettings(data) {
     method: 'POST',
     headers,
     body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+async function testTelegramSettings(data) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(`${API_SETTINGS}/test-telegram`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+  return res.json();
+}
+
+async function getVapidPublicKey() {
+  const headers = {};
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(`${API_SETTINGS}/vapid-public-key`, { headers });
+  const json = await res.json();
+  return json.success ? json.data.publicKey : null;
+}
+
+async function subscribePush(subscription) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(window.location.origin + '/api/items/push/subscribe', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ subscription }),
+  });
+  return res.json();
+}
+
+async function unsubscribePush(endpoint) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(window.location.origin + '/api/items/push/unsubscribe', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ endpoint }),
+  });
+  return res.json();
+}
+
+async function testPushSettings(subscription) {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getToken();
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(`${API_SETTINGS}/test-push`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ subscription }),
   });
   return res.json();
 }
@@ -1512,6 +1579,14 @@ async function startApp() {
   dom.smtpEnabled.addEventListener('change', () => { dom.smtpFields.style.display = dom.smtpEnabled.checked ? 'block' : 'none'; });
   dom.testSmsBtn.addEventListener('click', handleTestSms);
   dom.twilioEnabled.addEventListener('change', () => { dom.twilioFields.style.display = dom.twilioEnabled.checked ? 'block' : 'none'; });
+  dom.testTelegramBtn.addEventListener('click', handleTestTelegram);
+  dom.telegramEnabled.addEventListener('change', () => { dom.telegramFields.style.display = dom.telegramEnabled.checked ? 'block' : 'none'; });
+  dom.pushEnabled.addEventListener('change', handlePushToggle);
+  dom.pushSubscribeBtn.addEventListener('click', () => {
+    if (dom.pushSubscribeBtn.textContent.includes('Cancelar')) unsubscribeFromPush();
+    else subscribeToPush();
+  });
+  dom.testPushBtn.addEventListener('click', handleTestPush);
 
   dom.listViewTab.addEventListener('click', () => switchView('list'));
   dom.calendarViewTab.addEventListener('click', () => switchView('calendar'));
@@ -1636,6 +1711,11 @@ function init() {
   cacheDom();
   createLoginParticles();
 
+  // Register service worker for push notifications
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+
   const token = getToken();
   if (token) {
     fetch(window.location.origin + '/api/auth/verify', {
@@ -1673,8 +1753,123 @@ async function openSettings() {
     dom.twilioFromNumber.value = settings.twilio_from_number || '';
     dom.twilioToNumber.value = settings.twilio_to_number || '';
     dom.twilioFields.style.display = settings.twilio_enabled ? 'block' : 'none';
+    dom.telegramEnabled.checked = settings.telegram_enabled || false;
+    dom.telegramBotToken.value = settings.telegram_bot_token || '';
+    dom.telegramChatId.value = settings.telegram_chat_id || '';
+    dom.telegramFields.style.display = settings.telegram_enabled ? 'block' : 'none';
+    refreshPushUi();
     dom.settingsOverlay.style.display = 'flex';
   } catch (err) { showToast('Error al cargar configuración', 'error'); }
+}
+
+// ---- Push Subscription Helpers ----
+function isPushSupported() {
+  return 'serviceWorker' in navigator && 'PushManager' in window;
+}
+
+async function getExistingPushSubscription() {
+  if (!isPushSupported()) return null;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    return await reg.pushManager.getSubscription();
+  } catch (e) { return null; }
+}
+
+async function refreshPushUi() {
+  if (!dom.pushEnabled || !dom.pushStatus) return;
+  const sub = await getExistingPushSubscription();
+  const enabled = sub ? true : false;
+  if (dom.pushEnabled.checked !== enabled) dom.pushEnabled.checked = enabled;
+  if (dom.pushFields) dom.pushFields.style.display = dom.pushEnabled.checked ? 'block' : 'none';
+  if (dom.pushStatus) {
+    dom.pushStatus.textContent = enabled
+      ? 'Estado: suscrito a notificaciones push'
+      : (isPushSupported() ? 'Estado: no suscrito' : 'Estado: navegador no compatible');
+  }
+  if (dom.pushSubscribeBtn) {
+    dom.pushSubscribeBtn.textContent = enabled ? '\u{1F6AB} Cancelar suscripción' : '\u{1F4EA} Suscribirme a notificaciones';
+  }
+  return sub;
+}
+
+async function handlePushToggle(e) {
+  const wantEnabled = dom.pushEnabled.checked;
+  if (wantEnabled) {
+    await subscribeToPush();
+  } else {
+    await unsubscribeFromPush();
+  }
+}
+
+async function subscribeToPush() {
+  if (!isPushSupported()) { showToast('Este navegador no soporta notificaciones push', 'error'); return; }
+  try {
+    let permission = Notification.permission;
+    if (permission === 'default') permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      showToast('Permiso de notificaciones denegado', 'error');
+      refreshPushUi();
+      return;
+    }
+    const publicKey = await getVapidPublicKey();
+    if (!publicKey) { showToast('No se pudo obtener la clave VAPID del servidor', 'error'); return; }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(publicKey),
+      });
+    }
+    const result = await subscribePush(sub.toJSON());
+    if (result.success) {
+      showToast('Suscripción push registrada', 'success');
+      dom.pushEnabled.checked = true;
+    } else {
+      showToast(result.error || 'Error al registrar la suscripción', 'error');
+    }
+  } catch (err) {
+    showToast('Error al suscribirse a push: ' + err.message, 'error');
+  }
+  refreshPushUi();
+}
+
+async function unsubscribeFromPush() {
+  try {
+    const sub = await getExistingPushSubscription();
+    if (sub) {
+      await unsubscribePush(sub.endpoint);
+      await sub.unsubscribe();
+    }
+    showToast('Suscripción push cancelada', 'success');
+  } catch (err) {
+    showToast('Error al cancelar la suscripción: ' + err.message, 'error');
+  }
+  refreshPushUi();
+}
+
+async function handleTestPush() {
+  const sub = await getExistingPushSubscription();
+  if (!sub) { showToast('Primero suscríbete a notificaciones push', 'error'); return; }
+  dom.testPushBtn.disabled = true;
+  dom.testPushBtn.innerHTML = 'Enviando push...';
+  try {
+    const result = await testPushSettings(sub.toJSON());
+    if (result.success) showToast('✅ Push de prueba enviado', 'success');
+    else showToast(result.error || 'Error al enviar push de prueba', 'error');
+  } catch (err) { showToast('Error de conexión', 'error'); }
+  finally { dom.testPushBtn.disabled = false; dom.testPushBtn.innerHTML = '\u{1F4E4} Enviar push de prueba'; }
+}
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
 }
 
 function closeSettings() { dom.settingsOverlay.style.display = 'none'; }
@@ -1694,6 +1889,9 @@ async function handleSettingsSubmit(e) {
     twilio_auth_token: dom.twilioAuthToken.value,
     twilio_from_number: dom.twilioFromNumber.value.trim(),
     twilio_to_number: dom.twilioToNumber.value.trim(),
+    telegram_enabled: dom.telegramEnabled.checked,
+    telegram_bot_token: dom.telegramBotToken.value,
+    telegram_chat_id: dom.telegramChatId.value.trim(),
   };
   dom.settingsSave.disabled = true;
   dom.settingsSave.innerHTML = 'Guardando...';
@@ -1745,6 +1943,24 @@ async function handleTestSms() {
     else showToast(result.error || 'Error al enviar SMS de prueba', 'error');
   } catch (err) { showToast('Error de conexión', 'error'); }
   finally { dom.testSmsBtn.disabled = false; dom.testSmsBtn.innerHTML = '\u{1F4F1} Enviar SMS de prueba'; }
+}
+
+async function handleTestTelegram() {
+  const data = {
+    telegram_bot_token: dom.telegramBotToken.value.trim(),
+    telegram_chat_id: dom.telegramChatId.value.trim(),
+  };
+  if (!data.telegram_bot_token || !data.telegram_chat_id) {
+    showToast('Completa el token y el chat ID de Telegram primero', 'error'); return;
+  }
+  dom.testTelegramBtn.disabled = true;
+  dom.testTelegramBtn.innerHTML = 'Enviando...';
+  try {
+    const result = await testTelegramSettings(data);
+    if (result.success) showToast('✅ Mensaje de Telegram enviado', 'success');
+    else showToast(result.error || 'Error al enviar mensaje de Telegram', 'error');
+  } catch (err) { showToast('Error de conexión', 'error'); }
+  finally { dom.testTelegramBtn.disabled = false; dom.testTelegramBtn.innerHTML = '\u{1F4E2} Enviar mensaje de prueba'; }
 }
 
 document.addEventListener('DOMContentLoaded', init);

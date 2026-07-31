@@ -2,7 +2,8 @@ const initSqlJs = require('sql.js');
 const fs = require('fs');
 const path = require('path');
 
-const DB_PATH = path.join(__dirname, '..', 'data', 'centro.db');
+// Permite apuntar a una base de datos distinta (p. ej. en tests) vía variable de entorno.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, '..', 'data', 'centro.db');
 let db = null;
 let SQL = null;
 
@@ -77,6 +78,15 @@ function initSchema() {
     )
   `);
 
+  // Push subscriptions table (browser Web Push)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS push_subscriptions (
+      endpoint TEXT PRIMARY KEY,
+      subscription TEXT NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
   // Seed default admin user if no users exist
   const userCount = queryOne('SELECT COUNT(*) as count FROM users');
   if (!userCount || userCount.count === 0) {
@@ -101,6 +111,12 @@ function initSchema() {
     twilio_auth_token: '',
     twilio_from_number: '',
     twilio_to_number: '',
+    telegram_enabled: 'false',
+    telegram_bot_token: '',
+    telegram_chat_id: '',
+    vapid_public_key: '',
+    vapid_private_key: '',
+    vapid_subject: '',
   };
 
   Object.entries(defaultSettings).forEach(([key, value]) => {
@@ -217,7 +233,34 @@ function getSettings() {
     twilio_auth_token: settings.twilio_auth_token || '',
     twilio_from_number: settings.twilio_from_number || '',
     twilio_to_number: settings.twilio_to_number || '',
+    telegram_enabled: settings.telegram_enabled === 'true',
+    telegram_bot_token: settings.telegram_bot_token || '',
+    telegram_chat_id: settings.telegram_chat_id || '',
+    vapid_public_key: settings.vapid_public_key || '',
+    vapid_private_key: settings.vapid_private_key || '',
+    vapid_subject: settings.vapid_subject || '',
   };
+}
+
+// ---- Push Subscriptions ----
+
+function getPushSubscriptions() {
+  return queryAll('SELECT endpoint, subscription FROM push_subscriptions ORDER BY created_at ASC');
+}
+
+function addPushSubscription(subscription) {
+  if (!subscription || !subscription.endpoint) return null;
+  run(
+    'INSERT INTO push_subscriptions (endpoint, subscription) VALUES (?, ?) ON CONFLICT(endpoint) DO UPDATE SET subscription = excluded.subscription',
+    [subscription.endpoint, JSON.stringify(subscription)]
+  );
+  return subscription;
+}
+
+function removePushSubscription(endpoint) {
+  if (!endpoint) return false;
+  run('DELETE FROM push_subscriptions WHERE endpoint = ?', [endpoint]);
+  return true;
 }
 
 function updateSettings(newSettings) {
@@ -275,6 +318,9 @@ module.exports = {
   seedItems,
   getSettings,
   updateSettings,
+  getPushSubscriptions,
+  addPushSubscription,
+  removePushSubscription,
   getUserByUsername,
   updatePassword,
   closeDb,

@@ -1,6 +1,8 @@
 const nodemailer = require('nodemailer');
 const db = require('./db');
 const { initTwilio, sendSms, buildSmsContent, resetTwilio } = require('./sms');
+const { sendTelegram, buildTelegramContent } = require('./telegram');
+const { ensureVapidKeys, sendPushToAll } = require('./push');
 
 const ALERT_DAYS = [90, 60, 30, 7, 1];
 
@@ -246,6 +248,72 @@ async function checkAndNotify() {
           messages.push(`SMS error: ${err.message}`);
         } finally {
           resetTwilio();
+        }
+      }
+    }
+  }
+
+  // ---- Telegram Notifications ----
+  if (settings.telegram_enabled && settings.telegram_bot_token && settings.telegram_chat_id) {
+    const allItems = db.getAllItems();
+    const tgItems = allItems.filter(item => {
+      const days = daysUntil(item.expiryDate);
+      return days >= 0 && ALERT_DAYS.includes(days) && item.alertTelegram;
+    });
+
+    if (tgItems.length > 0) {
+      const tgBody = buildTelegramContent(tgItems);
+      if (tgBody) {
+        try {
+          const result = await sendTelegram(settings.telegram_bot_token, settings.telegram_chat_id, tgBody);
+          if (result.success) {
+            totalSent++;
+            messages.push(`Telegram: ${tgItems.length} alertas`);
+          } else {
+            totalErrors++;
+            messages.push(`Telegram error: ${result.message}`);
+          }
+        } catch (err) {
+          totalErrors++;
+          messages.push(`Telegram error: ${err.message}`);
+        }
+      }
+    }
+  }
+
+  // ---- Push Notifications (Web Push) ----
+  const pushSubs = db.getPushSubscriptions();
+  if (pushSubs.length > 0) {
+    const allItems = db.getAllItems();
+    const pushItems = allItems.filter(item => {
+      const days = daysUntil(item.expiryDate);
+      return days >= 0 && ALERT_DAYS.includes(days);
+    });
+
+    if (pushItems.length > 0) {
+      const vapid = ensureVapidKeys(settings, db.updateSettings);
+      if (vapid) {
+        try {
+          const payload = {
+            title: `\u{1F514} ${pushItems.length} renovaciones próximas`,
+            body: pushItems.slice(0, 5).map(i => `${i.name} — ${getDaysLabel(daysUntil(i.expiryDate))}`).join('\n'),
+            url: '/',
+          };
+          const result = await sendPushToAll(pushSubs, payload, db.removePushSubscription);
+          if (result.sent > 0) {
+            totalSent++;
+            messages.push(`Push: ${result.sent} notificaciones`);
+          }
+          if (result.errors > 0) {
+            totalErrors++;
+            messages.push(`Push error: ${result.errors} suscripciones fallidas`);
+          }
+          if (result.gone > 0) {
+            messages.push(`Push: ${result.gone} suscripciones inválidas eliminadas`);
+          }
+        } catch (err) {
+          totalErrors++;
+          messages.push(`Push error: ${err.message}`);
         }
       }
     }

@@ -550,6 +550,72 @@
           </div>
         </div>
 
+        <hr class="settings-divider" />
+
+        <!-- === TELEGRAM SECTION === -->
+        <div class="settings-section-title">&#x1F4E2; Notificaciones por Telegram</div>
+        <div class="settings-info">
+          <p>Recibe alertas autom&aacute;ticas en tu chat de Telegram creando un bot con <a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a> y obteniendo su token.</p>
+          <p class="settings-rec">Para obtener el chat ID: env&iacute;ale un mensaje a tu bot y visita <code>https://api.telegram.org/bot&lt;TOKEN&gt;/getUpdates</code>.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label-toggle">
+            <input type="checkbox" id="telegramEnabled" />
+            <span>Activar notificaciones por Telegram</span>
+          </label>
+        </div>
+
+        <div id="telegramFields" style="display:none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="telegramBotToken" class="form-label">Token del bot</label>
+              <input type="password" id="telegramBotToken" class="form-input" placeholder="123456:ABC-DEF..." autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="telegramChatId" class="form-label">Chat ID (destino)</label>
+              <input type="text" id="telegramChatId" class="form-input" placeholder="123456789" autocomplete="off" />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-top:4px;">
+            <button type="button" class="btn btn-secondary" id="testTelegramBtn" style="font-size:0.8rem;width:100%;">
+              &#x1F4E2; Enviar mensaje de prueba
+            </button>
+          </div>
+        </div>
+
+        <hr class="settings-divider" />
+
+        <!-- === PUSH SECTION === -->
+        <div class="settings-section-title">&#x1F4EA; Notificaciones Push (navegador)</div>
+        <div class="settings-info">
+          <p>Recibe alertas en tu navegador aunque la pesta&ntilde;a est&eacute; cerrada. Requiere permitir notificaciones del sitio.</p>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label form-label-toggle">
+            <input type="checkbox" id="pushEnabled" />
+            <span>Activar notificaciones push</span>
+          </label>
+        </div>
+
+        <div id="pushFields" style="display:none;">
+          <div class="push-status" id="pushStatus">Estado: no suscrito</div>
+          <div class="form-row">
+            <div class="form-group">
+              <button type="button" class="btn btn-secondary" id="pushSubscribeBtn" style="font-size:0.8rem;width:100%;">
+                &#x1F4EA; Suscribirme a notificaciones
+              </button>
+            </div>
+            <div class="form-group">
+              <button type="button" class="btn btn-secondary" id="testPushBtn" style="font-size:0.8rem;width:100%;">
+                &#x1F4E4; Enviar push de prueba
+              </button>
+            </div>
+          </div>
+        </div>
+
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" id="settingsCancel">Cancelar</button>
           <button type="submit" class="btn btn-primary" id="settingsSave">

@@ -16,7 +16,7 @@ RUN cd server && npm ci --omit=dev
 # 2) Código de la aplicación:
 #    - Frontend estático en la raíz (lo sirve express.static desde ../..)
 #    - Backend en server/
-COPY index.html style.css script.js ./
+COPY index.html style.css script.js sw.js ./
 COPY server/src ./server/src
 
 # 3) Variables de entorno por defecto (Railway las puede sobrescribir)
