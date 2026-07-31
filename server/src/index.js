@@ -1,3 +1,7 @@
+// Cargar variables de entorno desde el .env de la raíz del proyecto (dev local).
+// Debe ejecutarse ANTES que cualquier módulo que lea process.env (auth, db).
+require('dotenv').config({ path: require('path').join(__dirname, '..', '..', '.env') });
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
