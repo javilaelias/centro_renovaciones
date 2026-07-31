@@ -104,15 +104,20 @@ npm run dev
 
 El proyecto incluye un `Dockerfile` y `railway.json` listos. Railway detecta automáticamente el `Dockerfile` (builder `DOCKERFILE`) y usa `/api/health` como healthcheck.
 
+El repositorio ya está en GitHub: [javilaelias/centro_renovaciones](https://github.com/javilaelias/centro_renovaciones). Puedes desplegarlo con un clic:
+
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new?template=https://github.com/javilaelias/centro_renovaciones)
+
 ### Opción A — Desde GitHub (recomendada)
 
-1. Sube este repositorio a GitHub.
-2. En [Railway](https://railway.app), crea un proyecto → **Deploy from GitHub repo**.
-3. Railway detecta el `Dockerfile` automáticamente. Verifica en los logs: `Using detected Dockerfile!`.
-4. En **Variables**, agrega:
+1. Pulsa el botón **Deploy on Railway** de arriba (o entra a [railway.app](https://railway.app) → **Deploy from GitHub repo**).
+2. Conecta tu cuenta de GitHub a Railway si aún no está vinculada.
+3. Selecciona el repositorio `javilaelias/centro_renovaciones` de la lista.
+4. Railway detecta el `Dockerfile` automáticamente. Verifica en los logs: `Using detected Dockerfile!`.
+5. En **Variables**, agrega:
    - `JWT_SECRET` → un valor aleatorio largo (genera uno con el comando de arriba).
    - `PORT` → `3001` (opcional; Railway lo asigna por su cuenta si lo dejas vacío).
-5. Espera a que el build termine y abre la URL pública de producción.
+6. Espera a que el build termine y abre la URL pública de producción.
 
 ### Opción B — Desde la CLI (Railway CLI)
 
