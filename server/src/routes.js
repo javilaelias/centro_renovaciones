@@ -154,6 +154,16 @@ router.put('/settings', requireAdmin, (req, res) => {
   if (Array.isArray(req.body.req_estados)) {
     updates.req_estados = JSON.stringify([...new Set(req.body.req_estados.map(normalizeReqEstado).filter(Boolean))]);
   }
+  // F3: colores configurables por estado (objeto estado -> clase de color)
+  if (req.body.req_estado_colors && typeof req.body.req_estado_colors === 'object' && !Array.isArray(req.body.req_estado_colors)) {
+    const allowed = ['blue', 'gray', 'purple', 'cyan', 'amber', 'orange', 'green', 'red'];
+    const colors = {};
+    Object.entries(req.body.req_estado_colors).forEach(([estado, cls]) => {
+      const e = normalizeReqEstado(estado);
+      if (e && allowed.includes(String(cls))) colors[e] = String(cls);
+    });
+    updates.req_estado_colors = JSON.stringify(colors);
+  }
   // Flujo secuencial de estados de requerimientos (solo avanzar)
   if (req.body.req_flow_enabled !== undefined) {
     updates.req_flow_enabled = req.body.req_flow_enabled ? 'true' : 'false';

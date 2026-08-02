@@ -11,6 +11,7 @@
 > ✅ **D6 implementado el 2026-08-02** (exportación con plantilla oficial PDF). **La serie D está completa.**
 > ✅ **Serie E implementada el 2026-08-02** (E1 responsable editable, E2 comentarios por ítem, E3 exportar TODOS, E4 fecha de creación, E5 responsive, E6 permisos por rol).
 > ✅ **Variante TODOS → Oficial añadida el 2026-08-02** (la plantilla oficial PDF también exporta todos los requerimientos ignorando filtros).
+> ✅ **Serie F implementada el 2026-08-02** (F1 filtro por rango de fechas de ingreso/creación, F2 filtro con/sin adjunto, F3 colores de estado configurables, F4 búsqueda por hoja de ruta y adjunto, F5 dashboard con acceso directo a Requerimientos).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -74,7 +75,7 @@ Pero las **notas reales contienen 17+ campos**, muchos sin exponer en la vista:
 1. ¿El **flujo de estados** debe ser secuencial obligatorio o libre (actual)? *(ya es configurable en Configuración → flujo secuencial)*
 2. ¿Los analistas deben poder **editar cualquier campo** o solo estado/fecha (rol actual)?
 3. ¿Se necesita **historial/auditoría** de cambios de estado (quién y cuándo)? *(ya existe historial de estados por ítem)*
-4. ¿Algún estado del flujo real (OAB, presupuestal, conformidad) debe tener **color/distinción** propia? *(ya tienen colores propios: purple/cyan/amber…)*
+4. ¿Algún estado del flujo real (OAB, presupuestal, conformidad) debe tener **color/distinción** propia? ✅ **Resuelto con F3**: los colores son configurables estado por estado desde Configuración (con 8 clases: blue, gray, purple, cyan, amber, orange, green, red), y se aplican en la tabla, el desplegable rápido, los chips y la dona del dashboard.
 5. ¿La **fecha de vencimiento** que se asigna a un requerimiento debe tener un formato o regla especial?
 
 ---
@@ -93,7 +94,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 2.1 | Búsqueda por nombre, REQ, área, responsable, estado, tipo | ✅ Incluye además estado servicio, empresa y área usuaria; insensible a acentos |
 | 2.2 / 2.3 | Filtros por Estado y Área | ✅ Selects + chips resumen |
 | 2.4 | Chips resumen (Por estado / Por área) útiles y con conteos correctos | ✅ 5 grupos: estado, área, área usuaria, estado servicio, datos incompletos |
-| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | ✅ Responsable (B1), Tipo (D3), rango de costo (D4). **Fecha de creación ⬜ (no existe en los datos; campo editable añadido en E4)** |
+| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | ✅ Responsable (B1), Tipo (D3), rango de costo (D4). **Filtro por rango de fechas de ingreso y creación ✅ (F1)** |
 | 3.1 | Cambio rápido de Estado persiste | ✅ Select inline + historial |
 | 3.2 | Lista de estados adecuada y en orden lógico | ✅ 19 estados por defecto (A3), personalizables, flujo secuencial opcional |
 | 3.3 | Asignar fecha de vencimiento saca el ítem de pendientes | ✅ Input de fecha en la fila |
@@ -134,8 +135,13 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 | E4 | Campo/columna **Fecha de creación** (editable, ordenable y exportado) | 2.5 | ✅ Implementado 2026-08-02 |
 | E5 | **Responsive** de la vista Requerimientos (filtros, costos, exportaciones) | 6.2 | ✅ Implementado 2026-08-02 |
 | E6 | **Permisos por rol**: analista solo estado/fecha en requerimientos; edición completa y eliminación exclusivas de admin (frontend + 403 en servidor) | 7.3 | ✅ Implementado 2026-08-02 |
+| F1 | **Filtro por rango de fechas** de ingreso y creación (desde/hasta) | 2.5 | ✅ Implementado 2026-08-02 |
+| F2 | **Filtro Con/Sin adjunto** (enlace Sharepoint) | 4.4 | ✅ Implementado 2026-08-02 |
+| F3 | **Colores de estado configurables** (editor en Configuración; se aplican en la tabla, chips y dona del dashboard) | Decisión 4 | ✅ Implementado 2026-08-02 |
+| F4 | **Búsqueda ampliada** a códigos de hoja de ruta y enlace adjunto | 2.1 | ✅ Implementado 2026-08-02 |
+| F5 | **Dashboard Inicio**: el total de requerimientos y las barras/dona navegan a la vista con el filtro aplicado | 6.x | ✅ Implementado 2026-08-02 |
 
-**Serie E completa.** Tabla de Requerimientos: 16 columnas (REQ · Requerimiento · Ingreso · **Creado** · Tipo · Área · Área usuaria · Responsable · Estado · Estado servicio · Prioridad · Empresa/Proveedor · Costo · Hoja de ruta · Adjunto · Acciones).
+**Serie E y F completas.** Tabla de Requerimientos: 16 columnas (REQ · Requerimiento · Ingreso · **Creado** · Tipo · Área · Área usuaria · Responsable · Estado · Estado servicio · Prioridad · Empresa/Proveedor · Costo · Hoja de ruta · Adjunto · Acciones) · Filtros: búsqueda, estado, área, área usuaria, responsable, estado servicio, tipo, adjunto, costo y rangos de fecha de ingreso/creación.
 
 ---
 

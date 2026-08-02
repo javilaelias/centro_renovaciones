@@ -191,6 +191,7 @@ function initSchema() {
 
   const defaultSettings = {
     req_estados: JSON.stringify(defaultReqEstados),
+    req_estado_colors: '{}',
     req_flow_enabled: 'false',
     req_flow_order: JSON.stringify(defaultReqFlowOrder),
     tramite_url: '',
@@ -415,8 +416,13 @@ function getSettings() {
   try { req_flow_order = JSON.parse(settings.req_flow_order || '[]'); } catch (e) { req_flow_order = []; }
   if (!Array.isArray(req_flow_order)) req_flow_order = [];
 
+  let req_estado_colors = {};
+  try { req_estado_colors = JSON.parse(settings.req_estado_colors || '{}'); } catch (e) { req_estado_colors = {}; }
+  if (!req_estado_colors || typeof req_estado_colors !== 'object' || Array.isArray(req_estado_colors)) req_estado_colors = {};
+
   return {
     req_estados,
+    req_estado_colors,
     req_flow_enabled: settings.req_flow_enabled === 'true',
     req_flow_order,
     smtp_enabled: settings.smtp_enabled === 'true',

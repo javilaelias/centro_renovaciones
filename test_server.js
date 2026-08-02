@@ -521,6 +521,22 @@ test('PUT /api/settings guarda configuración', async () => {
   assert.equal(r.data.data.telegram_chat_id, '12345');
 });
 
+test('PUT /api/settings guarda colores de estado (F3)', async () => {
+  await resetSettings();
+  // Colores válidos se guardan; clase no permitida se descarta
+  const r = await request('PUT', '/api/items/settings', {
+    req_estado_colors: { 'En trámite': 'red', 'Contratado': 'cyan', 'Revisión OAB': 'magenta' },
+  }, authToken);
+  assert.equal(r.status, 200);
+  assert.equal(r.data.data.req_estado_colors['En trámite'], 'red');
+  assert.equal(r.data.data.req_estado_colors['Contratado'], 'cyan');
+  assert.equal(r.data.data.req_estado_colors['Revisión OAB'], undefined); // 'magenta' no es clase permitida
+  // GET devuelve los colores guardados
+  const g = await request('GET', '/api/items/settings', {}, authToken);
+  assert.equal(g.status, 200);
+  assert.equal(g.data.data.req_estado_colors['En trámite'], 'red');
+});
+
 test('GET /api/settings/vapid-public-key genera clave VAPID', async () => {
   const r = await request('GET', '/api/items/settings/vapid-public-key', null, authToken);
   assert.equal(r.status, 200);

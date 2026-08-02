@@ -50,6 +50,14 @@ let reqGroupByArea = false;       // C2: agrupar filas por área
 let reqTipoFilter = 'all';        // D3: filtro por tipo
 let reqCostMin = '';              // D4: rango de costo (mínimo)
 let reqCostMax = '';              // D4: rango de costo (máximo)
+let reqAdjuntoFilter = 'all';     // F2: 'all' | 'con' | 'sin' (adjunto/enlace Sharepoint)
+let reqIngresoFrom = '';          // F1: rango de fechas de ingreso (desde)
+let reqIngresoTo = '';            // F1: rango de fechas de ingreso (hasta)
+let reqCreacionFrom = '';         // F1: rango de fechas de creación (desde)
+let reqCreacionTo = '';           // F1: rango de fechas de creación (hasta)
+// F3: colores de estado configurables (mapa estado -> clase CSS, sobreescribe REQ_ESTADO_COLORS)
+let reqEstadoColors = {};
+let reqEstadoColorDraft = {};     // borrador en el modal de Configuración
 // Paginación de la tabla de requerimientos
 const REQ_PAGE_SIZES = [10, 25, 50, 0]; // 0 = mostrar todos
 const REQ_PAGE_SIZE_KEY = 'centro_req_page_size';
@@ -83,6 +91,11 @@ function saveReqFilters() {
       tipo: reqTipoFilter || 'all',
       costMin: reqCostMin || '',
       costMax: reqCostMax || '',
+      adjunto: reqAdjuntoFilter || 'all',
+      ingresoFrom: reqIngresoFrom || '',
+      ingresoTo: reqIngresoTo || '',
+      creacionFrom: reqCreacionFrom || '',
+      creacionTo: reqCreacionTo || '',
       sortKey: reqSortKey || '',
       sortDir: reqSortDir || 1,
       page: reqPage || 1,
@@ -109,6 +122,11 @@ function restoreReqFilters() {
     if (typeof f.tipo === 'string') reqTipoFilter = f.tipo;
     if (typeof f.costMin === 'string') reqCostMin = f.costMin;
     if (typeof f.costMax === 'string') reqCostMax = f.costMax;
+    if (typeof f.adjunto === 'string') reqAdjuntoFilter = f.adjunto;
+    if (typeof f.ingresoFrom === 'string') reqIngresoFrom = f.ingresoFrom;
+    if (typeof f.ingresoTo === 'string') reqIngresoTo = f.ingresoTo;
+    if (typeof f.creacionFrom === 'string') reqCreacionFrom = f.creacionFrom;
+    if (typeof f.creacionTo === 'string') reqCreacionTo = f.creacionTo;
     if (typeof f.sortKey === 'string') reqSortKey = f.sortKey;
     if (typeof f.sortDir === 'number') reqSortDir = f.sortDir === -1 ? -1 : 1;
     const p = parseInt(f.page, 10);
@@ -234,6 +252,11 @@ function cacheDom() {
   dom.reqTipoFilter = $('#reqTipoFilter');
   dom.reqCostMin = $('#reqCostMin');
   dom.reqCostMax = $('#reqCostMax');
+  dom.reqAdjuntoFilter = $('#reqAdjuntoFilter');
+  dom.reqIngresoFrom = $('#reqIngresoFrom');
+  dom.reqIngresoTo = $('#reqIngresoTo');
+  dom.reqCreacionFrom = $('#reqCreacionFrom');
+  dom.reqCreacionTo = $('#reqCreacionTo');
   dom.reqGroupToggle = $('#reqGroupToggle');
   dom.reqTbody = $('#reqTbody');
   dom.reqEmpty = $('#reqEmpty');
@@ -1277,7 +1300,8 @@ function getFilteredReqItems() {
   if (q) {
     result = result.filter(item => {
       const p = parseReqNotes(item);
-      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.prioridad + ' ' + p.tipo + ' ' + p.empresa + ' ' + p.creacion + ' ' + (p.comentarios || []).join(' ') + ' ' + (item.provider || ''));
+      // F4: la búsqueda también incluye los códigos de hoja de ruta y el enlace adjunto
+      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.prioridad + ' ' + p.tipo + ' ' + p.empresa + ' ' + p.creacion + ' ' + (p.hr || []).join(' ') + ' ' + p.adjunto + ' ' + (p.comentarios || []).join(' ') + ' ' + (item.provider || ''));
       return haystack.toLowerCase().includes(q);
     });
   }
@@ -1308,6 +1332,44 @@ function getFilteredReqItems() {
   // D3: filtro por tipo
   if (reqTipoFilter !== 'all') {
     result = result.filter(item => (parseReqNotes(item).tipo || 'Sin asignar') === reqTipoFilter);
+  }
+  // F2: filtro por adjunto (con o sin enlace Sharepoint)
+  if (reqAdjuntoFilter !== 'all') {
+    result = result.filter(item => {
+      const hasAdjunto = !!parseReqNotes(item).adjunto;
+      return reqAdjuntoFilter === 'con' ? hasAdjunto : !hasAdjunto;
+    });
+  }
+  // F1: filtro por rango de fechas de ingreso (si Desde > Hasta se intercambian,
+  // igual que en el rango de costo D4, para evitar una tabla vacía confusa)
+  let ingresoFrom = toIsoDate(reqIngresoFrom);
+  let ingresoTo = toIsoDate(reqIngresoTo);
+  if (ingresoFrom && ingresoTo && ingresoFrom > ingresoTo) {
+    const tmp = ingresoFrom; ingresoFrom = ingresoTo; ingresoTo = tmp;
+  }
+  if (ingresoFrom || ingresoTo) {
+    result = result.filter(item => {
+      const d = toIsoDate(parseReqNotes(item).ingreso);
+      if (!d) return false;
+      if (ingresoFrom && d < ingresoFrom) return false;
+      if (ingresoTo && d > ingresoTo) return false;
+      return true;
+    });
+  }
+  // F1: filtro por rango de fechas de creación (mismo swap que ingreso)
+  let creacionFrom = toIsoDate(reqCreacionFrom);
+  let creacionTo = toIsoDate(reqCreacionTo);
+  if (creacionFrom && creacionTo && creacionFrom > creacionTo) {
+    const tmp = creacionFrom; creacionFrom = creacionTo; creacionTo = tmp;
+  }
+  if (creacionFrom || creacionTo) {
+    result = result.filter(item => {
+      const d = toIsoDate(parseReqNotes(item).creacion);
+      if (!d) return false;
+      if (creacionFrom && d < creacionFrom) return false;
+      if (creacionTo && d > creacionTo) return false;
+      return true;
+    });
   }
   // D4: filtro por rango de costo
   let costMin = parseFloat(reqCostMin);
@@ -1366,8 +1428,28 @@ function getFilteredReqItems() {
   return result;
 }
 
+// F3: clases de color disponibles para los estados (opciones del editor en Configuración)
+const REQ_COLOR_CLASS_HEX = {
+  blue: '#3b82f6',
+  gray: '#94a3b8',
+  purple: '#8b5cf6',
+  cyan: '#06b6d4',
+  amber: '#f59e0b',
+  orange: '#f97316',
+  green: '#10b981',
+  red: '#ef4444'
+};
+const REQ_COLOR_CLASSES = Object.keys(REQ_COLOR_CLASS_HEX);
+
 function reqEstadoColor(estado) {
-  return REQ_ESTADO_COLORS[estado] || 'gray';
+  // F3: los colores configurables (reqEstadoColors) sobreescriben los por defecto
+  return reqEstadoColors[estado] || REQ_ESTADO_COLORS[estado] || 'gray';
+}
+
+// F3: devuelve el hex de un estado respetando el color configurable (para la dona del dashboard)
+function reqEstadoHex(estado) {
+  const cls = reqEstadoColor(estado);
+  return REQ_COLOR_CLASS_HEX[cls] || REQ_ESTADO_HEX[estado] || '#94a3b8';
 }
 
 // Chips resumen: desglose de los pendientes por estado y área (arriba de la tabla)
@@ -1574,6 +1656,13 @@ function renderRequirements() {
   // D4: sincroniza los inputs de rango de costo
   if (dom.reqCostMin && dom.reqCostMin.value !== String(reqCostMin)) dom.reqCostMin.value = reqCostMin;
   if (dom.reqCostMax && dom.reqCostMax.value !== String(reqCostMax)) dom.reqCostMax.value = reqCostMax;
+  // F2: sincroniza el select de adjunto
+  if (dom.reqAdjuntoFilter && dom.reqAdjuntoFilter.value !== reqAdjuntoFilter) dom.reqAdjuntoFilter.value = reqAdjuntoFilter;
+  // F1: sincroniza los rangos de fechas (ingreso y creación)
+  if (dom.reqIngresoFrom && dom.reqIngresoFrom.value !== reqIngresoFrom) dom.reqIngresoFrom.value = reqIngresoFrom;
+  if (dom.reqIngresoTo && dom.reqIngresoTo.value !== reqIngresoTo) dom.reqIngresoTo.value = reqIngresoTo;
+  if (dom.reqCreacionFrom && dom.reqCreacionFrom.value !== reqCreacionFrom) dom.reqCreacionFrom.value = reqCreacionFrom;
+  if (dom.reqCreacionTo && dom.reqCreacionTo.value !== reqCreacionTo) dom.reqCreacionTo.value = reqCreacionTo;
 
   // Chips resumen (después de la sincronización de filtros para reflejar el estado real)
   renderReqSummary();
@@ -1926,6 +2015,10 @@ function getActiveReqFiltersText() {
     const hi = reqCostMax !== '' ? reqCostMax : '∞';
     parts.push(`Costo: ${lo} – ${hi}`);
   }
+  if (reqAdjuntoFilter === 'con') parts.push('Con adjunto');
+  if (reqAdjuntoFilter === 'sin') parts.push('Sin adjunto');
+  if (reqIngresoFrom || reqIngresoTo) parts.push(`Ingreso: ${reqIngresoFrom || '∞'} – ${reqIngresoTo || '∞'}`);
+  if (reqCreacionFrom || reqCreacionTo) parts.push(`Creado: ${reqCreacionFrom || '∞'} – ${reqCreacionTo || '∞'}`);
   return parts.length ? parts.join(' · ') : 'Sin filtros';
 }
 function exportReqAllOficialPdf() { exportReqOficialPdf(true); }
@@ -2283,7 +2376,7 @@ function renderDashboard() {
   // --- Dona de estados (conic-gradient puro, sin librerías) ---
   let donutAcc = 0;
   const donutStops = estadoEntries.map(([e, n], idx) => {
-    const color = REQ_ESTADO_HEX[e] || '#94a3b8';
+    const color = reqEstadoHex(e);
     const from = donutAcc;
     donutAcc += reqs.length ? (n / reqs.length) * 100 : 0;
     // Fuerza el último tramo a 100% exacto para evitar huecos por punto flotante
@@ -2297,7 +2390,7 @@ function renderDashboard() {
     const pct = reqs.length ? Math.round((n / reqs.length) * 100) : 0;
     return `
       <div class="dash-donut-legend-item" data-req-estado="${encodeURIComponent(e)}" data-tip="estado" role="button" tabindex="0" aria-label="Filtrar por ${escapeHtml(e)}">
-        <span class="dash-donut-legend-dot" style="background:${REQ_ESTADO_HEX[e] || '#94a3b8'};" ></span>
+        <span class="dash-donut-legend-dot" style="background:${reqEstadoHex(e)};" ></span>
         <span class="dash-donut-legend-name">${escapeHtml(e)}</span>
         <span class="dash-donut-legend-num">${n}</span>
         <span class="dash-donut-legend-pct">${pct}%</span>
@@ -2356,7 +2449,7 @@ function renderDashboard() {
           <h3>📋 Gestión de Requerimientos</h3>
           <button class="btn btn-secondary" data-goto="req">Ver tabla →</button>
         </div>
-        <div class="dash-req-total">
+        <div class="dash-req-total" data-goto="req" role="button" tabindex="0" title="Ir a la vista de Requerimientos" aria-label="Ver la tabla de requerimientos">
           <span class="dash-req-total-num">${reqs.length}</span>
           <span class="dash-req-total-label">requerimientos en gestión</span>
         </div>
@@ -3454,6 +3547,12 @@ async function startApp() {
       // Normaliza por acentos para no duplicar 'En tramite'/'En trámite'
       reqEstadoOptions = [...new Set(settings.req_estados.map(normalizeReqEstado).filter(Boolean))];
     }
+    // F3: colores configurables de estados
+    if (settings.req_estado_colors && typeof settings.req_estado_colors === 'object') {
+      reqEstadoColors = { ...settings.req_estado_colors };
+    } else {
+      reqEstadoColors = {};
+    }
     if (settings.req_flow_enabled !== undefined) {
       reqFlowEnabled = !!settings.req_flow_enabled;
     }
@@ -3569,6 +3668,13 @@ async function startApp() {
   // D4: filtro por rango de costo
   if (dom.reqCostMin) dom.reqCostMin.addEventListener('input', (e) => { reqCostMin = e.target.value; reqPage = 1; renderRequirements(); });
   if (dom.reqCostMax) dom.reqCostMax.addEventListener('input', (e) => { reqCostMax = e.target.value; reqPage = 1; renderRequirements(); });
+  // F2: filtro por adjunto
+  if (dom.reqAdjuntoFilter) dom.reqAdjuntoFilter.addEventListener('change', (e) => { reqAdjuntoFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // F1: rangos de fechas de ingreso y creación
+  if (dom.reqIngresoFrom) dom.reqIngresoFrom.addEventListener('change', (e) => { reqIngresoFrom = e.target.value; reqPage = 1; renderRequirements(); });
+  if (dom.reqIngresoTo) dom.reqIngresoTo.addEventListener('change', (e) => { reqIngresoTo = e.target.value; reqPage = 1; renderRequirements(); });
+  if (dom.reqCreacionFrom) dom.reqCreacionFrom.addEventListener('change', (e) => { reqCreacionFrom = e.target.value; reqPage = 1; renderRequirements(); });
+  if (dom.reqCreacionTo) dom.reqCreacionTo.addEventListener('change', (e) => { reqCreacionTo = e.target.value; reqPage = 1; renderRequirements(); });
   // B5: ordenar columnas al hacer clic en el encabezado
   const reqThead = document.querySelector('.req-table thead');
   if (reqThead) {
@@ -3820,6 +3926,18 @@ async function openSettings() {
     reqEstadoDraft = Array.isArray(settings.req_estados)
       ? [...new Set(settings.req_estados.map(normalizeReqEstado).filter(Boolean))]
       : [...REQ_ESTADO_OPTIONS];
+    // F3: colores configurables de estados (solo los de estados existentes)
+    if (settings.req_estado_colors && typeof settings.req_estado_colors === 'object') {
+      const clean = {};
+      Object.entries(settings.req_estado_colors).forEach(([e, c]) => {
+        if (reqEstadoDraft.includes(e)) clean[e] = c;
+      });
+      reqEstadoColors = { ...clean };
+      reqEstadoColorDraft = { ...clean };
+    } else {
+      reqEstadoColors = {};
+      reqEstadoColorDraft = {};
+    }
     renderReqEstadosEditor();
     // Flujo secuencial (borrador; se confirma al guardar)
     reqFlowEnabled = !!settings.req_flow_enabled;
@@ -3952,13 +4070,27 @@ function renderReqEstadosEditor() {
     dom.reqEstadosList.innerHTML = '<span class="req-estados-empty">Sin estados configurados. Agrega uno o restaura la lista por defecto.</span>';
     return;
   }
-  dom.reqEstadosList.innerHTML = reqEstadoDraft.map((e, i) => `
+  dom.reqEstadosList.innerHTML = reqEstadoDraft.map((e, i) => {
+    const colorClass = reqEstadoColorDraft[e] || reqEstadoColor(e) || 'gray';
+    const colorOptions = REQ_COLOR_CLASSES.map(c =>
+      `<option value="${c}"${c === colorClass ? ' selected' : ''}>${c}</option>`).join('');
+    return `
     <span class="req-estado-chip">
       <span class="req-estado-chip-label">${escapeHtml(e)}</span>
+      <select class="req-estado-color-select" data-estado="${escapeHtml(e)}" data-index="${i}" title="Color del estado ${escapeHtml(e)}" aria-label="Color de ${escapeHtml(e)}">${colorOptions}</select>
       <button type="button" class="req-estado-chip-x" data-index="${i}" title="Quitar estado" aria-label="Quitar ${escapeHtml(e)}">&times;</button>
-    </span>`).join('');
+    </span>`;
+  }).join('');
   dom.reqEstadosList.querySelectorAll('.req-estado-chip-x').forEach(btn => {
     btn.addEventListener('click', () => removeReqEstado(parseInt(btn.dataset.index, 10)));
+  });
+  // F3: al cambiar el color de un estado se guarda en el borrador de colores
+  dom.reqEstadosList.querySelectorAll('.req-estado-color-select').forEach(sel => {
+    sel.addEventListener('change', () => {
+      const estado = sel.dataset.estado;
+      if (!estado) return;
+      reqEstadoColorDraft[estado] = sel.value;
+    });
   });
 }
 
@@ -3973,19 +4105,20 @@ function addReqEstado() {
   renderReqEstadosEditor();
   renderReqFlowEditor();
   dom.reqEstadoInput.focus();
-}
-
-function removeReqEstado(index) {
+}function removeReqEstado(index) {
   const removed = reqEstadoDraft[index];
   reqEstadoDraft.splice(index, 1);
-  if (removed) reqFlowDraft = reqFlowDraft.filter(s => s !== removed);
+  if (removed) {
+    reqFlowDraft = reqFlowDraft.filter(s => s !== removed);
+    delete reqEstadoColorDraft[removed];
+  }
   renderReqEstadosEditor();
   renderReqFlowEditor();
 }
-
 function resetReqEstados() {
   reqEstadoDraft = [...REQ_ESTADO_OPTIONS];
   reqFlowDraft = [...REQ_FLOW_DEFAULT_ORDER];
+  reqEstadoColorDraft = {};
   renderReqEstadosEditor();
   renderReqFlowEditor();
   showToast('Lista de estados restaurada', 'success');
@@ -4047,6 +4180,7 @@ async function handleSettingsSubmit(e) {
     telegram_bot_token: dom.telegramBotToken.value,
     telegram_chat_id: dom.telegramChatId.value.trim(),
     req_estados: reqEstadoDraft,
+    req_estado_colors: reqEstadoColorDraft,
     req_flow_enabled: dom.reqFlowEnabled ? dom.reqFlowEnabled.checked : false,
     req_flow_order: reqFlowDraft,
     tramite_url: dom.tramiteUrl ? dom.tramiteUrl.value.trim() : '',
@@ -4055,8 +4189,9 @@ async function handleSettingsSubmit(e) {
   dom.settingsSave.innerHTML = 'Guardando...';
   try {
     await saveSettings(data);
-    // Confirma los borradores de estados y flujo como lista activa
+    // Confirma los borradores de estados, colores y flujo como lista activa
     reqEstadoOptions = [...reqEstadoDraft];
+    reqEstadoColors = { ...reqEstadoColorDraft };
     reqFlowEnabled = dom.reqFlowEnabled ? dom.reqFlowEnabled.checked : false;
     reqFlowOrder = [...reqFlowDraft];
     tramiteUrl = dom.tramiteUrl ? dom.tramiteUrl.value.trim() : '';

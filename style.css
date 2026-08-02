@@ -4614,6 +4614,66 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
   white-space: nowrap;
 }
 
+/* F1: rangos de fechas de ingreso y creación en la barra de filtros */
+.req-date-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border: 1px solid var(--primary-100);
+  border-radius: 10px;
+  background: var(--surface);
+}
+.req-date-range-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--primary-500);
+  white-space: nowrap;
+}
+.req-date-input {
+  padding: 6px 8px;
+  border: 1px solid var(--primary-200);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.78rem;
+  font-family: inherit;
+  color: var(--primary-700);
+  outline: none;
+  transition: all 0.2s var(--ease);
+}
+.req-date-input:hover { border-color: var(--accent-300); }
+.req-date-input:focus { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-ring); }
+
+/* F3: selector de color por estado en Configuración */
+.req-estado-color-select {
+  padding: 4px 6px;
+  border: 1px solid var(--primary-200);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.72rem;
+  font-family: inherit;
+  color: var(--primary-700);
+  outline: none;
+  cursor: pointer;
+  transition: all 0.15s var(--ease);
+}
+.req-estado-color-select:hover { border-color: var(--accent-300); }
+.req-estado-color-select:focus { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-ring); }
+
+/* F5: el total de requerimientos del dashboard es clicable */
+.dash-req-total {
+  cursor: pointer;
+  transition: transform 0.15s var(--ease);
+}
+.dash-req-total:hover {
+  transform: translateY(-2px);
+}
+.dash-req-total:hover .dash-req-total-num {
+  color: var(--accent-600);
+}
+
 /* E5: responsive de la barra de filtros y acciones de Requerimientos */
 @media (max-width: 768px) {
   .req-cost-range {
@@ -4623,6 +4683,15 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
   .req-cost-input {
     flex: 1;
     width: auto;
+  }
+  .req-date-range {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .req-date-input {
+    flex: 1;
+    width: auto;
+    min-width: 0;
   }
   .cal-export-actions {
     width: 100%;
