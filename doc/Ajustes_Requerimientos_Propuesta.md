@@ -7,6 +7,8 @@
 > ✅ **C1–C4 implementados el 2026-08-02** (paginación, agrupación por área, contador por área usuaria y exportación con notas completas).
 > ✅ **D1–D2 implementados el 2026-08-02** (columnas Ingreso y Prioridad en la tabla, editables desde el modal, incluidas en las exportaciones).
 > ✅ **D3–D4 implementados el 2026-08-02** (filtro por tipo y filtro por rango de costo en la vista de Requerimientos).
+> ✅ **D5 implementado el 2026-08-02** (acción duplicar requerimiento desde la tabla).
+> ✅ **D6 implementado el 2026-08-02** (exportación con plantilla oficial PDF). **La serie D está completa.**
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -95,9 +97,9 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 3.3 | Asignar fecha de vencimiento saca el ítem de pendientes | ✅ Input de fecha en la fila |
 | 3.4 | Editar (modal) completo: notas, costo, proveedor | ✅ Modal completo + tooltip de notas (B4) |
 | 3.5 | Eliminar pide confirmación | ✅ Confirmación; además solo visible para admin |
-| 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | 🟡 Historial de estados ✅. **Duplicar** → candidato D5 |
+| 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | 🟡 Historial ✅, **duplicar ✅ (D5)**, prioridad ✅ (D2). Comentarios y asignar responsable ⬜ |
 | 4.1–4.3 | Exportación CSV/PDF/XLSX de datos filtrados | ✅ Filtros aplicados + notas completas (C4) + Estado servicio |
-| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | 🟡 Exporta lo filtrado (con "Mostrar todos" en paginación se exporta todo). Plantilla con formato oficial → candidato D6 |
+| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | 🟡 Exporta lo filtrado (con "Mostrar todos" se exporta todo). **Plantilla oficial ✅ (D6)** |
 | 5.1 / 5.2 | Estados personalizables desde Configuración | ✅ Editor de estados + flujo, con migración automática |
 | 5.3 | ¿Flujo secuencial obligatorio? | 🟡 Opcional configurable (desactivado por defecto) — validar con analistas (decisión 1) |
 | 6.1 | Carga rápida con ~70 filas | ✅ Paginación (C1) + orden/agrupación |
@@ -122,8 +124,8 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 | D2 | Campo/columna de **Prioridad** (alta/media/baja) | 1.2, 3.6 | ✅ Implementado 2026-08-02 |
 | D3 | Filtro por **Tipo** | 2.5 | ✅ Implementado 2026-08-02 |
 | D4 | Filtro por **rango de costo** (fecha de creación: no aplica, no existe en los datos) | 2.5 | ✅ Implementado 2026-08-02 |
-| D5 | Acción **duplicar requerimiento** | 3.6 |
-| D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 |
+| D5 | Acción **duplicar requerimiento** | 3.6 | ✅ Implementado 2026-08-02 |
+| D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 | ✅ Implementado 2026-08-02 |
 
 ---
 

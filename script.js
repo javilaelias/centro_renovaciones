@@ -360,6 +360,29 @@ async function createItem(data) {
   return json.data;
 }
 
+// D5: duplica un requerimiento abriendo el modal precargado en modo crear
+// (el analista puede ajustar la copia antes de guardarla como ítem nuevo)
+function duplicateItem(id) {
+  const item = items.find(i => i.id === id);
+  if (!item) return;
+  editingId = null;               // modo crear: no actualiza el original
+  dom.itemId.value = '';
+  const copy = {
+    name: (item.name || '') + ' (copia)',
+    category: item.category || '',
+    expiryDate: item.expiryDate || '',
+    cost: item.cost,
+    provider: item.provider || '',
+    notes: item.notes || '',
+    alertEmail: item.alertEmail || false,
+    alertWhatsApp: item.alertWhatsApp || false,
+    alertTelegram: item.alertTelegram || false,
+  };
+  openModal('Duplicar requerimiento', copy);
+  dom.itemName.focus();
+  dom.itemName.select();
+}
+
 async function updateItem(id, data) {
   const json = await apiRequest('PUT', `/${id}`, data);
   const idx = items.findIndex(i => i.id === id);
@@ -1568,6 +1591,7 @@ function renderRequirements() {
         <td class="req-actions">
           <input type="date" class="req-date-input" title="Asignar fecha de vencimiento (sale de pendientes)" min="${new Date().toISOString().split('T')[0]}" onchange="quickSetDate('${item.id}', this.value)" />
           <button class="item-action-btn history" onclick="openReqHistory('${item.id}')" data-tooltip="Ver historial de estados">&#128337;&#xFE0F;</button>
+          <button class="item-action-btn duplicate" onclick="duplicateItem('${item.id}')" data-tooltip="Duplicar requerimiento">&#128209;</button>
           <button class="item-action-btn edit" onclick="openEdit('${item.id}')" data-tooltip="Editar requerimiento">&#9998;&#xFE0F;</button>
           ${isAdmin() ? `<button class="item-action-btn delete" onclick="confirmDelete('${item.id}')" data-tooltip="Eliminar requerimiento">&#128465;&#xFE0F;</button>` : ''}
         </td>
@@ -1834,6 +1858,112 @@ function exportReqPdf() {
   win.document.close();
   win.focus();
   showToast(`Generando PDF de ${data.length} requerimientos...`, 'info');
+}
+
+// ---- D6: exportación con plantilla oficial (PDF institucional) ----
+const OFICIAL_ENTIDAD = 'Ministerio de Economía y Finanzas';
+const OFICIAL_UNIDAD = 'Oficina General de Tecnologías de la Información';
+// Describe los filtros activos para incluirlos en el reporte oficial
+function getActiveReqFiltersText() {
+  const parts = [];
+  const q = reqSearchQuery || searchQuery;
+  if (q) parts.push(`Búsqueda: "${q}"`);
+  if (reqEstadoFilter !== 'all') parts.push(`Estado: ${reqEstadoFilter}`);
+  if (reqAreaFilter !== 'all') parts.push(`Área: ${reqAreaFilter}`);
+  if (reqAreaUsuariaFilter !== 'all') parts.push(`Área usuaria: ${reqAreaUsuariaFilter}`);
+  if (reqResponsableFilter !== 'all') parts.push(`Responsable: ${reqResponsableFilter}`);
+  if (reqEstadoServicioFilter !== 'all') parts.push(`Estado servicio: ${reqEstadoServicioFilter}`);
+  if (reqTipoFilter !== 'all') parts.push(`Tipo: ${reqTipoFilter}`);
+  if (reqMissingFilter === 'req') parts.push('Solo sin REQ');
+  if (reqMissingFilter === 'area') parts.push('Solo sin área');
+  if (reqCostMin !== '' || reqCostMax !== '') {
+    const lo = reqCostMin !== '' ? reqCostMin : '0';
+    const hi = reqCostMax !== '' ? reqCostMax : '∞';
+    parts.push(`Costo: ${lo} – ${hi}`);
+  }
+  return parts.length ? parts.join(' · ') : 'Sin filtros';
+}
+function exportReqOficialPdf() {
+  const data = getFilteredReqItems();
+  if (data.length === 0) { showToast('No hay requerimientos para exportar', 'info'); return; }
+  const win = window.open('', '_blank', 'width=1000,height=650');
+  if (!win) { showToast('Permite ventanas emergentes para exportar PDF', 'error'); return; }
+  const today = new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+  const rowsHtml = data.map((item, idx) => {
+    const p = parseReqNotes(item);
+    const estadoHex = REQ_ESTADO_HEX[p.estado] || '#6366f1';
+    const prioHex = REQ_PRIORIDAD_HEX[p.prioridad] || '#64748b';
+    return `
+      <tr>
+        <td class="num">${idx + 1}</td>
+        <td class="code">${escapeHtml(p.req || '—')}</td>
+        <td class="name">${escapeHtml(item.name)}</td>
+        <td>${escapeHtml(p.areaUsuaria || '—')}</td>
+        <td>${escapeHtml(p.responsable || '—')}</td>
+        <td><span class="badge" style="background:${estadoHex}1a;color:${estadoHex};border:1px solid ${estadoHex}44;">${escapeHtml(p.estado || '—')}</span></td>
+        <td>${p.prioridad ? `<span class="badge" style="background:${prioHex}1a;color:${prioHex};border:1px solid ${prioHex}44;">${escapeHtml(p.prioridad)}</span>` : '—'}</td>
+        <td class="cost">${item.cost != null ? escapeHtml(formatCurrency(item.cost)) : ''}</td>
+      </tr>`;
+  }).join('');
+  const totalCost = data.reduce((s, i) => s + (i.cost != null && i.cost >= 0 ? i.cost : 0), 0);
+  const filtros = getActiveReqFiltersText();
+  win.document.write(`<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Reporte oficial de requerimientos</title><style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Times New Roman', Georgia, serif; color: #1e293b; padding: 40px; }
+  .doc-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #1d4ed8; padding-bottom: 12px; margin-bottom: 14px; }
+  .doc-header .entidad { font-size: 15px; font-weight: 700; color: #1e3a8a; text-transform: uppercase; letter-spacing: 0.04em; }
+  .doc-header .unidad { font-size: 11px; color: #475569; margin-top: 2px; }
+  .doc-header .seal { width: 52px; height: 52px; border: 2px solid #1d4ed8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1d4ed8; font-size: 20px; flex-shrink: 0; }
+  .doc-title { text-align: center; font-size: 16px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #0f172a; margin: 18px 0 4px; }
+  .doc-ref { text-align: center; font-size: 11px; color: #64748b; margin-bottom: 14px; }
+  .meta { font-size: 11px; color: #334155; margin-bottom: 12px; line-height: 1.7; }
+  .meta b { color: #0f172a; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #1d4ed8; color: #fff; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; padding: 8px; border: 1px solid #1e40af; text-align: left; }
+  td { font-size: 11px; padding: 7px 8px; border: 1px solid #cbd5e1; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+  tr { page-break-inside: avoid; }
+  td.num { text-align: center; width: 28px; }
+  td.code { font-weight: 700; white-space: nowrap; }
+  td.name { min-width: 260px; }
+  td.cost { text-align: right; white-space: nowrap; }
+  .badge { display: inline-block; padding: 1px 7px; border-radius: 9px; font-size: 10px; font-weight: 600; }
+  .firmas { display: flex; justify-content: space-between; gap: 40px; margin-top: 48px; }
+  .firma { flex: 1; text-align: center; font-size: 11px; color: #334155; }
+  .firma .line { border-top: 1px solid #475569; margin-bottom: 6px; }
+  .print-footer { margin-top: 24px; font-size: 10px; color: #94a3b8; text-align: center; }
+  @media print { body { padding: 20px; } .no-print { display: none; } }
+</style></head><body>
+  <div class="doc-header">
+    <div>
+      <div class="entidad">${escapeHtml(OFICIAL_ENTIDAD)}</div>
+      <div class="unidad">${escapeHtml(OFICIAL_UNIDAD)}</div>
+    </div>
+    <div class="seal">&#x21BB;</div>
+  </div>
+  <div class="doc-title">Reporte de requerimientos en gesti&oacute;n</div>
+  <div class="doc-ref">Documento generado desde RenovaMEF &bull; ${today}</div>
+  <div class="meta">
+    <div><b>N&uacute;mero de requerimientos:</b> ${data.length}</div>
+    <div><b>Costo total:</b> ${escapeHtml(formatCurrency(totalCost))}</div>
+    <div><b>Filtros aplicados:</b> ${escapeHtml(filtros)}</div>
+  </div>
+  <table>
+    <thead><tr><th>N&deg;</th><th>REQ</th><th>Requerimiento</th><th>&Aacute;rea usuaria</th><th>Responsable</th><th>Estado</th><th>Prioridad</th><th style="text-align:right;">Costo</th></tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <div class="firmas">
+    <div class="firma"><div class="line"></div>Elaborado por</div>
+    <div class="firma"><div class="line"></div>Revisado por</div>
+    <div class="firma"><div class="line"></div>Autorizado por</div>
+  </div>
+  <div class="print-footer no-print">RenovaMEF — Imprima o guarde como PDF para usar el documento oficial</div>
+  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>
+</body></html>`);
+  win.document.close();
+  win.focus();
+  showToast(`Generando PDF oficial de ${data.length} requerimientos...`, 'info');
 }
 
 // Construye los bytes del .xlsx a partir de un conjunto de ítems (generador local sin dependencias)

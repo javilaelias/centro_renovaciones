@@ -1414,6 +1414,8 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
 
 .item-action-btn.edit { background: var(--accent-50); color: var(--accent-600); }
 .item-action-btn.edit:hover { background: var(--accent-100); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(59,130,246,0.15); }
+.item-action-btn.duplicate { background: #dcfce7; color: #16a34a; }
+.item-action-btn.duplicate:hover { background: #bbf7d0; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(22,163,74,0.15); }
 .item-action-btn.delete { background: var(--red-100); color: var(--red-500); }
 .item-action-btn.delete:hover { background: #fecaca; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(239,68,68,0.15); }
 
@@ -3224,6 +3226,16 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
 }
 
 /* Variante verde estilo Excel para exportar .xlsx */
+.cal-export-btn-oficial {
+  background: #1d4ed8;
+  color: #fff;
+  border-color: #1e40af;
+  font-weight: 600;
+}
+.cal-export-btn-oficial:hover {
+  background: #1e40af;
+  color: #fff;
+}
 .cal-export-btn-excel {
   border-color: var(--excel-border, #16a34a);
   color: var(--excel-color, #15803d);
