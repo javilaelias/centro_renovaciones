@@ -53,19 +53,32 @@ centro_renovaciones/
 ├── sw.js               # Service Worker (notificaciones push del navegador)
 ├── test_helpers.js     # Helpers compartidos (request + waitForServer)
 ├── test_server.js      # Suite de tests automatizada (npm test)
+├── test_xlsx_export.js # Test de la exportación XLSX
 ├── start_and_test.js   # Script heredado de verificación manual
+├── real_items.json     # Datos reales de los analistas (para load_real_data)
 ├── Dockerfile          # Imagen para producción (Railway)
 ├── .dockerignore       # Excluye .env y temporales del build
 ├── .gitignore          # Excluye .env, node_modules, BD y temporales
 ├── railway.json        # Config de despliegue en Railway
 ├── .env.example        # Plantilla de variables de entorno
 ├── .env.test           # Config para la suite (TEST_PORT, sin secretos)
+├── .deploy.env.example # Plantilla de credenciales de despliegue
+├── iniciar_centro.bat  # Arranque rápido del servidor en Windows
+├── deploy_remote_update.sh  # Actualización del despliegue remoto
+├── deploy_test_server.sh    # Despliegue del servidor de pruebas
+├── convert_excel.py    # Conversión de datos Excel → JSON
+├── extract_xlsx.py     # Extracción de datos del consolidado Excel
+├── doc/                # Propuesta, observaciones y consolidado de analistas
+│   ├── Ajustes_Requerimientos_Propuesta.md
+│   ├── Observaciones_Analistas_Requerimientos.md
+│   └── CONSOLIDADO v2.xlsx
 ├── .github/
 │   └── workflows/
 │       └── test.yml    # CI: ejecuta la suite en cada push/PR
 └── server/
     ├── package.json
     ├── package-lock.json    # Versiones exactas (usado por npm ci en CI)
+    ├── load_real_data.js    # Carga los datos reales (real_items.json) en la BD
     └── src/
         ├── index.js        # Servidor Express (sirve API + frontend)
         ├── auth.js         # JWT + middleware requireAuth
