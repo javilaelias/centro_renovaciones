@@ -10,12 +10,27 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 
 ## ✨ Características
 
-- **Login seguro** con JWT (tokens de 30 días).
+- **Login seguro** con JWT (tokens de 30 días) y **registro de analistas con Gmail** (roles admin/analista).
+- **Vista Requerimientos** para gestionar pendientes: tabla de **15 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, rango de costo, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
+- **Acciones por fila**: cambio rápido de estado, asignar fecha de vencimiento, **duplicar requerimiento**, historial de estados y edición.
+- **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas).
 - **Vista lista y calendario** con filtros por categoría, urgencia, fecha y búsqueda.
 - **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
 - **Envío manual** de recordatorios por WhatsApp, Telegram, Email, Push y exportación JSON/CSV/PDF.
 - **Importar/exportar** datos, temas claro/oscuro y colores de acento.
+- **Estados personalizados** para requerimientos (con normalización por acentos y **flujo secuencial** opcional).
 - **Cambio de contraseña** desde la interfaz y **logout** con un clic.
+
+## 📋 Vista de Requerimientos
+
+Gestión de los requerimientos en trámite (ítems sin fecha de vencimiento), construida sobre los datos reales de los analistas:
+
+- **15 columnas**: REQ, Requerimiento, Ingreso, Tipo, Área, Área usuaria, Responsable, Estado, Estado servicio, Prioridad, Empresa/Proveedor, Costo, Hoja de ruta (enlace al sistema de trámite documentario), Adjunto (enlace SharePoint) y Acciones.
+- **8 filtros**: búsqueda insensible a acentos, estado, área, área usuaria, responsable, estado servicio, tipo y rango de costo (con persistencia entre sesiones).
+- **Chips resumen** por estado, área, área usuaria, estado servicio y datos incompletos (Sin REQ / Sin área), clicables para filtrar.
+- **Paginación** (10/25/50/Todos), **agrupación por área**, **ordenamiento** por cualquier columna (▲/▼).
+- **Prioridad** (Alta/Media/Baja) y **Fecha de ingreso** editables desde el modal y visibles en la tabla.
+- **Exportaciones**: CSV, PDF, XLSX (con notas completas) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas).
 
 ## 🧱 Stack
 
@@ -34,6 +49,7 @@ centro_renovaciones/
 ├── index.html          # Frontend (SPA)
 ├── script.js           # Lógica del frontend
 ├── style.css           # Estilos
+├── xlsx_export.js      # Generador XLSX sin dependencias (exportaciones)
 ├── sw.js               # Service Worker (notificaciones push del navegador)
 ├── test_helpers.js     # Helpers compartidos (request + waitForServer)
 ├── test_server.js      # Suite de tests automatizada (npm test)
