@@ -13,7 +13,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 - **Login seguro** con JWT (tokens de 30 días) y **registro de analistas con Gmail** (roles admin/analista).
 - **Vista Requerimientos** para gestionar pendientes: tabla de **16 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, rango de costo, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
 - **Acciones por fila**: cambio rápido de estado, asignar fecha de vencimiento, **comentarios por requerimiento**, **duplicar requerimiento**, historial de estados y edición (solo admin).
-- **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + botón **TODOS** (exporta todos los pendientes ignorando filtros) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas).
+- **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + botón **TODOS** (exporta todos los pendientes ignorando filtros) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas), con variante **TODOS → Oficial**.
 - **Permisos por rol en requerimientos**: los analistas solo cambian estado y fecha; edición completa y eliminación son exclusivas del admin (frontend y servidor).
 - **Vista lista y calendario** con filtros por categoría, urgencia, fecha y búsqueda.
 - **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
@@ -32,7 +32,7 @@ Gestión de los requerimientos en trámite (ítems sin fecha de vencimiento), co
 - **Paginación** (10/25/50/Todos), **agrupación por área**, **ordenamiento** por cualquier columna (▲/▼).
 - **Campos editables desde el modal**: Prioridad (Alta/Media/Baja), Fecha de ingreso, **Responsable** (con sugerencias de los datos reales) y **Fecha de creación** — todos visibles en la tabla y ordenables.
 - **Comentarios por requerimiento** (💬): panel con historial de comentarios (se guardan en las notas como líneas `Comentarios:`) y agregado rápido con Enter.
-- **Exportaciones**: CSV, PDF, XLSX (con notas completas), botón **TODOS** (exporta todos los pendientes ignorando filtros) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas).
+- **Exportaciones**: CSV, PDF, XLSX (con notas completas), botón **TODOS** (exporta todos los pendientes ignorando filtros) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas). La plantilla oficial también tiene su variante **TODOS → Oficial** (exporta todos los requerimientos ignorando filtros; el reporte indica que se ignoraron los filtros activos).
 - **Permisos por rol**: los analistas solo pueden cambiar estado y asignar fecha desde la tabla; la edición completa y la eliminación son exclusivas del administrador (protegido también en el servidor con `403`).
 
 ## 🧱 Stack
