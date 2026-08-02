@@ -1928,8 +1928,10 @@ function getActiveReqFiltersText() {
   }
   return parts.length ? parts.join(' · ') : 'Sin filtros';
 }
-function exportReqOficialPdf() {
-  const data = getFilteredReqItems();
+function exportReqAllOficialPdf() { exportReqOficialPdf(true); }
+
+function exportReqOficialPdf(forceAll) {
+  const data = forceAll ? getReqItems() : getFilteredReqItems();
   if (data.length === 0) { showToast('No hay requerimientos para exportar', 'info'); return; }
   const win = window.open('', '_blank', 'width=1000,height=650');
   if (!win) { showToast('Permite ventanas emergentes para exportar PDF', 'error'); return; }
@@ -1951,7 +1953,7 @@ function exportReqOficialPdf() {
       </tr>`;
   }).join('');
   const totalCost = data.reduce((s, i) => s + (i.cost != null && i.cost >= 0 ? i.cost : 0), 0);
-  const filtros = getActiveReqFiltersText();
+  const filtros = forceAll ? 'Todos los requerimientos (se ignoraron los filtros activos)' : getActiveReqFiltersText();
   win.document.write(`<!DOCTYPE html>
 <html lang="es"><head><meta charset="UTF-8"><title>Reporte oficial de requerimientos</title><style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2008,7 +2010,7 @@ function exportReqOficialPdf() {
 </body></html>`);
   win.document.close();
   win.focus();
-  showToast(`Generando PDF oficial de ${data.length} requerimientos...`, 'info');
+  showToast(forceAll ? `Generando PDF oficial con TODOS los requerimientos (${data.length})...` : `Generando PDF oficial de ${data.length} requerimientos...`, 'info');
 }
 
 // Construye los bytes del .xlsx a partir de un conjunto de ítems (generador local sin dependencias)
