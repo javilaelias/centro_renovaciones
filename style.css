@@ -1721,6 +1721,33 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
 .req-select:hover { border-color: var(--accent-300); }
 .req-select:focus { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-ring); }
 
+/* D4: rango de costo (inputs min/max) */
+.req-cost-range {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.req-cost-input {
+  width: 108px;
+  padding: 9px 12px;
+  border: 1px solid var(--primary-200);
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 0.82rem;
+  font-family: inherit;
+  color: var(--primary-700);
+  outline: none;
+  transition: all 0.2s var(--ease);
+}
+.req-cost-input::placeholder { color: var(--primary-400); }
+.req-cost-input:hover { border-color: var(--accent-300); }
+.req-cost-input:focus { border-color: var(--accent-500); box-shadow: 0 0 0 3px var(--accent-ring); }
+.req-cost-sep {
+  color: var(--primary-400);
+  font-size: 0.9rem;
+  user-select: none;
+}
+
 /* ===== Resumen por estado y área (chips arriba de la tabla) ===== */
 .req-summary {
   display: flex;

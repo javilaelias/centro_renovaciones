@@ -47,6 +47,9 @@ let reqSortKey = '';          // columna de ordenamiento activa (B5)
 let reqSortDir = 1;           // 1 = asc, -1 = desc
 let reqAreaUsuariaFilter = 'all'; // C3: filtro por área usuaria
 let reqGroupByArea = false;       // C2: agrupar filas por área
+let reqTipoFilter = 'all';        // D3: filtro por tipo
+let reqCostMin = '';              // D4: rango de costo (mínimo)
+let reqCostMax = '';              // D4: rango de costo (máximo)
 // Paginación de la tabla de requerimientos
 const REQ_PAGE_SIZES = [10, 25, 50, 0]; // 0 = mostrar todos
 const REQ_PAGE_SIZE_KEY = 'centro_req_page_size';
@@ -77,6 +80,9 @@ function saveReqFilters() {
       missing: reqMissingFilter || 'all',
       areausuaria: reqAreaUsuariaFilter || 'all',
       groupByArea: !!reqGroupByArea,
+      tipo: reqTipoFilter || 'all',
+      costMin: reqCostMin || '',
+      costMax: reqCostMax || '',
       sortKey: reqSortKey || '',
       sortDir: reqSortDir || 1,
       page: reqPage || 1,
@@ -100,6 +106,9 @@ function restoreReqFilters() {
     if (typeof f.missing === 'string') reqMissingFilter = f.missing;
     if (typeof f.areausuaria === 'string') reqAreaUsuariaFilter = f.areausuaria;
     if (typeof f.groupByArea === 'boolean') reqGroupByArea = f.groupByArea;
+    if (typeof f.tipo === 'string') reqTipoFilter = f.tipo;
+    if (typeof f.costMin === 'string') reqCostMin = f.costMin;
+    if (typeof f.costMax === 'string') reqCostMax = f.costMax;
     if (typeof f.sortKey === 'string') reqSortKey = f.sortKey;
     if (typeof f.sortDir === 'number') reqSortDir = f.sortDir === -1 ? -1 : 1;
     const p = parseInt(f.page, 10);
@@ -218,6 +227,9 @@ function cacheDom() {
   dom.reqAreaFilter = $('#reqAreaFilter');
   dom.reqResponsableFilter = $('#reqResponsableFilter');
   dom.reqEstadoServicioFilter = $('#reqEstadoServicioFilter');
+  dom.reqTipoFilter = $('#reqTipoFilter');
+  dom.reqCostMin = $('#reqCostMin');
+  dom.reqCostMax = $('#reqCostMax');
   dom.reqGroupToggle = $('#reqGroupToggle');
   dom.reqTbody = $('#reqTbody');
   dom.reqEmpty = $('#reqEmpty');
@@ -1239,6 +1251,25 @@ function getFilteredReqItems() {
   if (reqAreaUsuariaFilter !== 'all') {
     result = result.filter(item => (parseReqNotes(item).areaUsuaria || 'Sin asignar') === reqAreaUsuariaFilter);
   }
+  // D3: filtro por tipo
+  if (reqTipoFilter !== 'all') {
+    result = result.filter(item => (parseReqNotes(item).tipo || 'Sin asignar') === reqTipoFilter);
+  }
+  // D4: filtro por rango de costo
+  let costMin = parseFloat(reqCostMin);
+  let costMax = parseFloat(reqCostMax);
+  // UX: si el mínimo supera al máximo, se intercambian para evitar tabla vacía confusa
+  if (!isNaN(costMin) && !isNaN(costMax) && costMin > costMax) {
+    const tmp = costMin; costMin = costMax; costMax = tmp;
+  }
+  if (!isNaN(costMin) || !isNaN(costMax)) {
+    result = result.filter(item => {
+      if (item.cost == null || item.cost < 0) return false;
+      if (!isNaN(costMin) && item.cost < costMin) return false;
+      if (!isNaN(costMax) && item.cost > costMax) return false;
+      return true;
+    });
+  }
   // B5: orden por la columna elegida (por defecto: código REQ asc)
   const sortFns = {
     req:         (p) => { const m = (p.req || '').match(/REQ-\d{4}-(\d+)/); return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER; },
@@ -1473,6 +1504,17 @@ function renderRequirements() {
     reqEstadoServicioFilter = estadosServicio.includes(reqEstadoServicioFilter) ? reqEstadoServicioFilter : 'all';
     dom.reqEstadoServicioFilter.value = reqEstadoServicioFilter;
   }
+  // D3: opciones dinámicas del filtro por tipo
+  const tipos = [...new Set(all.map(i => parseReqNotes(i).tipo || 'Sin asignar'))].sort((a, b) => a.localeCompare(b, 'es'));
+  if (dom.reqTipoFilter) {
+    dom.reqTipoFilter.innerHTML = '<option value="all">Todos los tipos</option>' +
+      tipos.map(t => `<option value="${escapeHtml(t)}">${escapeHtml(t)}</option>`).join('');
+    reqTipoFilter = tipos.includes(reqTipoFilter) ? reqTipoFilter : 'all';
+    dom.reqTipoFilter.value = reqTipoFilter;
+  }
+  // D4: sincroniza los inputs de rango de costo
+  if (dom.reqCostMin && dom.reqCostMin.value !== String(reqCostMin)) dom.reqCostMin.value = reqCostMin;
+  if (dom.reqCostMax && dom.reqCostMax.value !== String(reqCostMax)) dom.reqCostMax.value = reqCostMax;
 
   // Chips resumen (después de la sincronización de filtros para reflejar el estado real)
   renderReqSummary();
@@ -3258,6 +3300,11 @@ async function startApp() {
   if (dom.reqResponsableFilter) dom.reqResponsableFilter.addEventListener('change', (e) => { reqResponsableFilter = e.target.value; reqPage = 1; renderRequirements(); });
   // B2: filtro por estado servicio
   if (dom.reqEstadoServicioFilter) dom.reqEstadoServicioFilter.addEventListener('change', (e) => { reqEstadoServicioFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // D3: filtro por tipo
+  if (dom.reqTipoFilter) dom.reqTipoFilter.addEventListener('change', (e) => { reqTipoFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // D4: filtro por rango de costo
+  if (dom.reqCostMin) dom.reqCostMin.addEventListener('input', (e) => { reqCostMin = e.target.value; reqPage = 1; renderRequirements(); });
+  if (dom.reqCostMax) dom.reqCostMax.addEventListener('input', (e) => { reqCostMax = e.target.value; reqPage = 1; renderRequirements(); });
   // B5: ordenar columnas al hacer clic en el encabezado
   const reqThead = document.querySelector('.req-table thead');
   if (reqThead) {

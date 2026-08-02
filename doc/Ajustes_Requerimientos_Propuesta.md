@@ -6,6 +6,7 @@
 > ✅ **B1–B5 implementados el 2026-08-02** (filtro por responsable, filtro por estado servicio, indicador de items sin REQ/Área, tooltip de notas completas y ordenamiento de columnas).
 > ✅ **C1–C4 implementados el 2026-08-02** (paginación, agrupación por área, contador por área usuaria y exportación con notas completas).
 > ✅ **D1–D2 implementados el 2026-08-02** (columnas Ingreso y Prioridad en la tabla, editables desde el modal, incluidas en las exportaciones).
+> ✅ **D3–D4 implementados el 2026-08-02** (filtro por tipo y filtro por rango de costo en la vista de Requerimientos).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -88,7 +89,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 2.1 | Búsqueda por nombre, REQ, área, responsable, estado, tipo | ✅ Incluye además estado servicio, empresa y área usuaria; insensible a acentos |
 | 2.2 / 2.3 | Filtros por Estado y Área | ✅ Selects + chips resumen |
 | 2.4 | Chips resumen (Por estado / Por área) útiles y con conteos correctos | ✅ 5 grupos: estado, área, área usuaria, estado servicio, datos incompletos |
-| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | 🟡 Responsable ✅ (B1). **Tipo, rango de costo y fecha de creación** → candidatos D3/D4 |
+| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | 🟡 Responsable ✅ (B1). **Tipo ✅ (D3) y rango de costo ✅ (D4)**. Fecha de creación ⬜ (no existe en los datos) |
 | 3.1 | Cambio rápido de Estado persiste | ✅ Select inline + historial |
 | 3.2 | Lista de estados adecuada y en orden lógico | ✅ 19 estados por defecto (A3), personalizables, flujo secuencial opcional |
 | 3.3 | Asignar fecha de vencimiento saca el ítem de pendientes | ✅ Input de fecha en la fila |
@@ -119,8 +120,8 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 |---|---|---|
 | D1 | Columna **Fecha de ingreso** del requerimiento | 1.2 | ✅ Implementado 2026-08-02 |
 | D2 | Campo/columna de **Prioridad** (alta/media/baja) | 1.2, 3.6 | ✅ Implementado 2026-08-02 |
-| D3 | Filtro por **Tipo** | 2.5 |
-| D4 | Filtro por **rango de costo** y por **fecha de creación** | 2.5 |
+| D3 | Filtro por **Tipo** | 2.5 | ✅ Implementado 2026-08-02 |
+| D4 | Filtro por **rango de costo** (fecha de creación: no aplica, no existe en los datos) | 2.5 | ✅ Implementado 2026-08-02 |
 | D5 | Acción **duplicar requerimiento** | 3.6 |
 | D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 |
 
