@@ -45,6 +45,8 @@ let reqEstadoServicioFilter = 'all';
 let reqMissingFilter = 'all'; // 'all' | 'req' | 'area' (datos incompletos)
 let reqSortKey = '';          // columna de ordenamiento activa (B5)
 let reqSortDir = 1;           // 1 = asc, -1 = desc
+let reqAreaUsuariaFilter = 'all'; // C3: filtro por área usuaria
+let reqGroupByArea = false;       // C2: agrupar filas por área
 // Paginación de la tabla de requerimientos
 const REQ_PAGE_SIZES = [10, 25, 50, 0]; // 0 = mostrar todos
 const REQ_PAGE_SIZE_KEY = 'centro_req_page_size';
@@ -73,6 +75,8 @@ function saveReqFilters() {
       responsable: reqResponsableFilter || 'all',
       estadoservicio: reqEstadoServicioFilter || 'all',
       missing: reqMissingFilter || 'all',
+      areausuaria: reqAreaUsuariaFilter || 'all',
+      groupByArea: !!reqGroupByArea,
       sortKey: reqSortKey || '',
       sortDir: reqSortDir || 1,
       page: reqPage || 1,
@@ -94,6 +98,8 @@ function restoreReqFilters() {
     if (typeof f.responsable === 'string') reqResponsableFilter = f.responsable;
     if (typeof f.estadoservicio === 'string') reqEstadoServicioFilter = f.estadoservicio;
     if (typeof f.missing === 'string') reqMissingFilter = f.missing;
+    if (typeof f.areausuaria === 'string') reqAreaUsuariaFilter = f.areausuaria;
+    if (typeof f.groupByArea === 'boolean') reqGroupByArea = f.groupByArea;
     if (typeof f.sortKey === 'string') reqSortKey = f.sortKey;
     if (typeof f.sortDir === 'number') reqSortDir = f.sortDir === -1 ? -1 : 1;
     const p = parseInt(f.page, 10);
@@ -210,6 +216,7 @@ function cacheDom() {
   dom.reqAreaFilter = $('#reqAreaFilter');
   dom.reqResponsableFilter = $('#reqResponsableFilter');
   dom.reqEstadoServicioFilter = $('#reqEstadoServicioFilter');
+  dom.reqGroupToggle = $('#reqGroupToggle');
   dom.reqTbody = $('#reqTbody');
   dom.reqEmpty = $('#reqEmpty');
   dom.reqSummary = $('#reqSummary');
@@ -1223,6 +1230,10 @@ function getFilteredReqItems() {
   } else if (reqMissingFilter === 'area') {
     result = result.filter(item => !parseReqNotes(item).area);
   }
+  // C3: filtro por área usuaria
+  if (reqAreaUsuariaFilter !== 'all') {
+    result = result.filter(item => (parseReqNotes(item).areaUsuaria || 'Sin asignar') === reqAreaUsuariaFilter);
+  }
   // B5: orden por la columna elegida (por defecto: código REQ asc)
   const sortFns = {
     req:         (p) => { const m = (p.req || '').match(/REQ-\d{4}-(\d+)/); return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER; },
@@ -1245,11 +1256,18 @@ function getFilteredReqItems() {
       cmp = (typeof va === 'number' && typeof vb === 'number')
         ? va - vb
         : String(va).localeCompare(String(vb), 'es');
-      // Desempate determinista por nombre cuando las columnas empatan
-      return (cmp || a.name.localeCompare(b.name, 'es')) * reqSortDir;
+      cmp = cmp || a.name.localeCompare(b.name, 'es');
+      cmp = cmp * reqSortDir;
+    } else {
+      cmp = sortFns.req(pa) - sortFns.req(pb) || a.name.localeCompare(b.name, 'es');
     }
-    cmp = sortFns.req(pa) - sortFns.req(pb);
-    return cmp || a.name.localeCompare(b.name, 'es');
+    // C2: con agrupación activa, el área es la clave primaria y el
+    // orden elegido (o REQ) se aplica dentro de cada grupo
+    if (reqGroupByArea) {
+      const areaCmp = (pa.area || 'Sin área').localeCompare(pb.area || 'Sin área', 'es');
+      if (areaCmp !== 0) return areaCmp;
+    }
+    return cmp;
   });
   return result;
 }
@@ -1289,6 +1307,13 @@ function renderReqSummary() {
     estados.map(([e, c]) => chipHtml(e, c, REQ_ESTADO_HEX[e] || '#94a3b8', reqEstadoFilter === e, 'estado', e)).join('');
   const areaChips = chipHtml('Todas', all.length, '', reqAreaFilter === 'all', 'area', 'all') +
     areas.map(([a, c]) => chipHtml(a, c, '', reqAreaFilter === a, 'area', a)).join('');
+  // C3: contador por área usuaria en chips resumen (clic = filtrar)
+  const areasUsuarias = countBy(i => parseReqNotes(i).areaUsuaria);
+  // Sincroniza el filtro persistido: si el valor guardado ya no existe
+  // entre las opciones actuales, se resetea para evitar tabla vacía fantasma
+  reqAreaUsuariaFilter = areasUsuarias.some(([a]) => a === reqAreaUsuariaFilter) ? reqAreaUsuariaFilter : 'all';
+  const areaUsuariaChips = chipHtml('Todas', all.length, '', reqAreaUsuariaFilter === 'all', 'areausuaria', 'all') +
+    areasUsuarias.map(([a, c]) => chipHtml(a, c, '', reqAreaUsuariaFilter === a, 'areausuaria', a)).join('');
   const missingChips = chipHtml('Sin REQ', sinReq, '#f59e0b', reqMissingFilter === 'req', 'missing', 'req') +
     chipHtml('Sin &aacute;rea', sinArea, '#f43f5e', reqMissingFilter === 'area', 'missing', 'area');
   // B2: chips de acceso rápido al filtro por estado servicio
@@ -1304,6 +1329,10 @@ function renderReqSummary() {
     <div class="req-summary-group">
       <span class="req-summary-title">Por &aacute;rea</span>
       <div class="req-summary-chips">${areaChips}</div>
+    </div>
+    <div class="req-summary-group">
+      <span class="req-summary-title">Por &aacute;rea usuaria</span>
+      <div class="req-summary-chips">${areaUsuariaChips}</div>
     </div>
     <div class="req-summary-group">
       <span class="req-summary-title">Por estado servicio</span>
@@ -1326,6 +1355,8 @@ function setReqSummaryFilter(type, value) {
   } else if (type === 'estadoservicio') {
     reqEstadoServicioFilter = reqEstadoServicioFilter === value ? 'all' : value;
     if (dom.reqEstadoServicioFilter) dom.reqEstadoServicioFilter.value = reqEstadoServicioFilter;
+  } else if (type === 'areausuaria') {
+    reqAreaUsuariaFilter = reqAreaUsuariaFilter === value ? 'all' : value;
   } else if (type === 'missing') {
     reqMissingFilter = reqMissingFilter === value ? 'all' : value;
   }
@@ -1395,6 +1426,11 @@ function renderRequirements() {
   const filtered = getFilteredReqItems();
   dom.reqTitle.textContent = 'Gestión de Requerimientos';
   dom.reqCount.textContent = `${filtered.length} de ${all.length} ítems`;
+  // C2: refleja el estado del toggle de agrupación por área
+  if (dom.reqGroupToggle) {
+    dom.reqGroupToggle.classList.toggle('req-group-toggle-active', reqGroupByArea);
+    dom.reqGroupToggle.setAttribute('aria-pressed', String(reqGroupByArea));
+  }
 
   // Opciones dinámicas para los filtros
   const estados = [...new Set(all.map(i => parseReqNotes(i).estado || 'Sin asignar'))].sort((a, b) => a.localeCompare(b, 'es'));
@@ -1458,7 +1494,7 @@ function renderRequirements() {
     return;
   }
   dom.reqEmpty.style.display = 'none';
-  dom.reqTbody.innerHTML = pageItems.map(item => {
+  const buildRow = (item) => {
     const p = parseReqNotes(item);
     const color = reqEstadoColor(p.estado);
     const hasCost = item.cost != null && item.cost >= 0;
@@ -1483,7 +1519,25 @@ function renderRequirements() {
           ${isAdmin() ? `<button class="item-action-btn delete" onclick="confirmDelete('${item.id}')" data-tooltip="Eliminar requerimiento">&#128465;&#xFE0F;</button>` : ''}
         </td>
       </tr>`;
-  }).join('');
+  };
+  // C2: agrupación por área (filas de grupo con cabecera y contador)
+  let rowsHtml;
+  if (reqGroupByArea) {
+    const groups = [];
+    for (const item of pageItems) {
+      const area = parseReqNotes(item).area || 'Sin área';
+      let g = groups.find(g => g.area === area);
+      if (!g) { g = { area, items: [] }; groups.push(g); }
+      g.items.push(item);
+    }
+    rowsHtml = groups.map(g =>
+      `<tr class="req-group-row"><td colspan="12">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
+      g.items.map(buildRow).join('')
+    ).join('');
+  } else {
+    rowsHtml = pageItems.map(buildRow).join('');
+  }
+  dom.reqTbody.innerHTML = rowsHtml;
   renderReqPagination(filtered.length);
   saveReqFilters();
 }
@@ -1594,12 +1648,13 @@ function csvEscape(v) {
 }
 
 function buildReqCsv(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Costo', 'Empresa/Proveedor', 'Adjunto'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
-      csvEscape(p.req), csvEscape(item.name), csvEscape(p.tipo), csvEscape(p.area), csvEscape(p.areaUsuaria), csvEscape(p.responsable), csvEscape(p.estado),
-      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto)
+      csvEscape(p.req), csvEscape(item.name), csvEscape(p.tipo), csvEscape(p.area), csvEscape(p.areaUsuaria), csvEscape(p.responsable), csvEscape(p.estado), csvEscape(p.estadoServicio),
+      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto),
+      csvEscape(item.notes || '')
     ].join(',');
   });
   return '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
@@ -1677,12 +1732,14 @@ function exportReqPdf() {
         <td>${escapeHtml(p.areaUsuaria || '—')}</td>
         <td>${escapeHtml(p.responsable || '—')}</td>
         <td><span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}55;">${escapeHtml(p.estado || '—')}</span></td>
+        <td>${escapeHtml(p.estadoServicio || '—')}</td>
         <td class="cost">${item.cost != null ? escapeHtml(formatCurrency(item.cost)) : ''}</td>
         <td>${escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()) || '—')}</td>
         <td class="link">${p.adjunto ? escapeHtml(getHostname(p.adjunto)) : ''}</td>
+        <td class="notes">${escapeHtml(item.notes || '')}</td>
       </tr>`;
   }).join('');
-  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
+  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  td.notes { font-size: 10px; color: #64748b; white-space: pre-wrap; min-width: 140px; word-break: break-word; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } td.notes { min-width: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th>Estado servicio</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th><th>Notas completas</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
   win.document.close();
   win.focus();
   showToast(`Generando PDF de ${data.length} requerimientos...`, 'info');
@@ -1690,14 +1747,15 @@ function exportReqPdf() {
 
 // Construye los bytes del .xlsx a partir de un conjunto de ítems (generador local sin dependencias)
 function buildReqXlsxBytes(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Costo', 'Empresa/Proveedor', 'Adjunto'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
-      p.req, item.name, p.tipo, p.area, p.areaUsuaria, p.responsable, p.estado,
+      p.req, item.name, p.tipo, p.area, p.areaUsuaria, p.responsable, p.estado, p.estadoServicio,
       item.cost != null && item.cost !== '' ? item.cost : '',
       (item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim(),
-      p.adjunto
+      p.adjunto,
+      item.notes || ''
     ];
   });
   // Anchos de columna aproximados según el contenido (máx. 40)
@@ -3161,6 +3219,12 @@ async function startApp() {
       renderRequirements();
     });
   }
+  // C2: toggle de agrupación por área
+  if (dom.reqGroupToggle) dom.reqGroupToggle.addEventListener('click', () => {
+    reqGroupByArea = !reqGroupByArea;
+    reqPage = 1;
+    renderRequirements();
+  });
   // B4: tooltip de notas completas sobre la fila
   if (dom.reqTbody) {
     dom.reqTbody.addEventListener('mouseover', showReqNotesTooltip);

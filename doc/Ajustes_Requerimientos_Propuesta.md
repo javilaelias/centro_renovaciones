@@ -3,6 +3,8 @@
 **Fecha:** 2026-08-01 · **Fuente:** Auditoría funcional sobre los 70 pendientes reales (real_items.json)
 
 > ✅ **A1–A4 implementados el 2026-08-02** (columna Área usuaria, enlace Sharepoint clicable, estados por defecto ampliados con los 9 reales faltantes y columna Empresa/Proveedor).
+> ✅ **B1–B5 implementados el 2026-08-02** (filtro por responsable, filtro por estado servicio, indicador de items sin REQ/Área, tooltip de notas completas y ordenamiento de columnas).
+> ✅ **C1–C4 implementados el 2026-08-02** (paginación, agrupación por área, contador por área usuaria y exportación con notas completas).
 > ⏳ **Pendiente:** consolidar las observaciones de los analistas (pegar el contenido de la plantilla `Observaciones_Analistas_Requerimientos.md` completada). Esta propuesta es la **base técnica** validada contra los datos reales.
 
 ---
@@ -53,10 +55,10 @@ Pero las **notas reales contienen 17+ campos**, muchos sin exponer en la vista:
 ### 🟢 Baja — pulido y escalabilidad
 | # | Ajuste | Justificación |
 |---|---|---|
-| C1 | **Paginación** (o scroll virtual) | Con ~70+ filas la tabla se vuelve pesada |
-| C2 | **Agrupación por área** | Patrón natural de navegación para el analista |
-| C3 | **Contador por área usuaria** en chips resumen | Complementa el desglose actual por estado/área |
-| C4 | **Exportar incluyendo notas completas** (columna extra en CSV/PDF/XLSX) | Los analistas necesitan el detalle al enviar a OGTI |
+| C1 | **Paginación** (o scroll virtual) | Con ~70+ filas la tabla se vuelve pesada | ✅ Hecho (10/25/50/Todos con persistencia) |
+| C2 | **Agrupación por área** | Patrón natural de navegación para el analista | ✅ Hecho (toggle + filas de grupo) |
+| C3 | **Contador por área usuaria** en chips resumen | Complementa el desglose actual por estado/área | ✅ Hecho (chips clicables con filtro) |
+| C4 | **Exportar incluyendo notas completas** (columna extra en CSV/PDF/XLSX) | Los analistas necesitan el detalle al enviar a OGTI | ✅ Hecho |
 
 ---
 

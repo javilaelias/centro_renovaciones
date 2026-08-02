@@ -1817,6 +1817,66 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
   color: #fff;
 }
 
+/* C2: botón de agrupación por área */
+.req-group-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border: 1px solid var(--primary-200);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--primary-600);
+  font-size: 0.8rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s var(--ease);
+}
+.req-group-toggle:hover {
+  border-color: var(--accent-300);
+  color: var(--accent-600);
+  background: var(--accent-50);
+}
+.req-group-toggle-active {
+  background: var(--accent-500);
+  color: #fff;
+  border-color: var(--accent-500);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+.req-group-toggle-active:hover {
+  background: var(--accent-600);
+  color: #fff;
+}
+
+/* C2: fila de cabecera de grupo (área) */
+.req-group-row td {
+  background: var(--primary-50);
+  color: var(--primary-700);
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--primary-200);
+  border-top: 1px solid var(--surface-border);
+}
+.req-group-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: var(--accent-100);
+  color: var(--accent-600);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
 /* Tabla de requerimientos */
 .req-table-wrap {
   background: var(--surface);
