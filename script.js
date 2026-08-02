@@ -40,6 +40,11 @@ let calDateTo = '';
 let reqSearchQuery = '';
 let reqEstadoFilter = 'all';
 let reqAreaFilter = 'all';
+let reqResponsableFilter = 'all';
+let reqEstadoServicioFilter = 'all';
+let reqMissingFilter = 'all'; // 'all' | 'req' | 'area' (datos incompletos)
+let reqSortKey = '';          // columna de ordenamiento activa (B5)
+let reqSortDir = 1;           // 1 = asc, -1 = desc
 // Paginación de la tabla de requerimientos
 const REQ_PAGE_SIZES = [10, 25, 50, 0]; // 0 = mostrar todos
 const REQ_PAGE_SIZE_KEY = 'centro_req_page_size';
@@ -65,6 +70,11 @@ function saveReqFilters() {
       search: reqSearchQuery || '',
       estado: reqEstadoFilter || 'all',
       area: reqAreaFilter || 'all',
+      responsable: reqResponsableFilter || 'all',
+      estadoservicio: reqEstadoServicioFilter || 'all',
+      missing: reqMissingFilter || 'all',
+      sortKey: reqSortKey || '',
+      sortDir: reqSortDir || 1,
       page: reqPage || 1,
     }));
   } catch (e) { /* storage no disponible */ }
@@ -81,6 +91,11 @@ function restoreReqFilters() {
     }
     if (typeof f.estado === 'string') reqEstadoFilter = normalizeReqEstado(f.estado);
     if (typeof f.area === 'string') reqAreaFilter = f.area;
+    if (typeof f.responsable === 'string') reqResponsableFilter = f.responsable;
+    if (typeof f.estadoservicio === 'string') reqEstadoServicioFilter = f.estadoservicio;
+    if (typeof f.missing === 'string') reqMissingFilter = f.missing;
+    if (typeof f.sortKey === 'string') reqSortKey = f.sortKey;
+    if (typeof f.sortDir === 'number') reqSortDir = f.sortDir === -1 ? -1 : 1;
     const p = parseInt(f.page, 10);
     if (!isNaN(p) && p >= 1) reqPage = p;
   } catch (e) { /* datos corruptos: se ignora */ }
@@ -193,6 +208,8 @@ function cacheDom() {
   dom.reqSearchInput = $('#reqSearchInput');
   dom.reqEstadoFilter = $('#reqEstadoFilter');
   dom.reqAreaFilter = $('#reqAreaFilter');
+  dom.reqResponsableFilter = $('#reqResponsableFilter');
+  dom.reqEstadoServicioFilter = $('#reqEstadoServicioFilter');
   dom.reqTbody = $('#reqTbody');
   dom.reqEmpty = $('#reqEmpty');
   dom.reqSummary = $('#reqSummary');
@@ -1139,6 +1156,9 @@ function parseReqNotes(item) {
     areaUsuaria: get('Área usuaria'),
     responsable: get('Responsable'),
     estado: normalizeReqEstado(get('Estado')),
+    // El estado servicio también pasa por la normalización por acentos
+    // para que 'En tramite' no aparezca duplicado como 'En trámite'
+    estadoServicio: normalizeReqEstado(get('Estado servicio')),
     empresa: get('Empresa'),
     adjunto: extractAdjuntoUrl(notes),
     hr: extractHrCodes(notes),
@@ -1179,7 +1199,7 @@ function getFilteredReqItems() {
   if (q) {
     result = result.filter(item => {
       const p = parseReqNotes(item);
-      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.tipo + ' ' + p.empresa + ' ' + (item.provider || ''));
+      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.tipo + ' ' + p.empresa + ' ' + (item.provider || ''));
       return haystack.toLowerCase().includes(q);
     });
   }
@@ -1189,12 +1209,47 @@ function getFilteredReqItems() {
   if (reqAreaFilter !== 'all') {
     result = result.filter(item => (parseReqNotes(item).area || 'Sin asignar') === reqAreaFilter);
   }
-  // Orden: por código REQ (año + secuencia final)
+  // B1: filtro por responsable
+  if (reqResponsableFilter !== 'all') {
+    result = result.filter(item => (parseReqNotes(item).responsable || 'Sin asignar') === reqResponsableFilter);
+  }
+  // B2: filtro por estado servicio
+  if (reqEstadoServicioFilter !== 'all') {
+    result = result.filter(item => (parseReqNotes(item).estadoServicio || 'Sin asignar') === reqEstadoServicioFilter);
+  }
+  // B3: indicador/filtro de items sin REQ o sin Área
+  if (reqMissingFilter === 'req') {
+    result = result.filter(item => !parseReqNotes(item).req);
+  } else if (reqMissingFilter === 'area') {
+    result = result.filter(item => !parseReqNotes(item).area);
+  }
+  // B5: orden por la columna elegida (por defecto: código REQ asc)
+  const sortFns = {
+    req:         (p) => { const m = (p.req || '').match(/REQ-\d{4}-(\d+)/); return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER; },
+    name:        (p, it) => it.name,
+    tipo:        (p) => p.tipo || '',
+    area:        (p) => p.area || '',
+    areaUsuaria: (p) => p.areaUsuaria || '',
+    responsable: (p) => p.responsable || '',
+    estado:      (p) => p.estado || '',
+    empresa:     (p, it) => ((it.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()),
+    cost:        (p, it) => (it.cost != null && it.cost >= 0 ? it.cost : Number.MAX_SAFE_INTEGER),
+  };
   result.sort((a, b) => {
-    const seq = (code) => { const m = (code || '').match(/REQ-\d{4}-(\d+)/); return m ? parseInt(m[1], 10) : Number.MAX_SAFE_INTEGER; };
-    const na = seq(parseReqNotes(a).req);
-    const nb = seq(parseReqNotes(b).req);
-    return na - nb || a.name.localeCompare(b.name);
+    const pa = parseReqNotes(a);
+    const pb = parseReqNotes(b);
+    let cmp;
+    if (reqSortKey && sortFns[reqSortKey]) {
+      const va = sortFns[reqSortKey](pa, a);
+      const vb = sortFns[reqSortKey](pb, b);
+      cmp = (typeof va === 'number' && typeof vb === 'number')
+        ? va - vb
+        : String(va).localeCompare(String(vb), 'es');
+      // Desempate determinista por nombre cuando las columnas empatan
+      return (cmp || a.name.localeCompare(b.name, 'es')) * reqSortDir;
+    }
+    cmp = sortFns.req(pa) - sortFns.req(pb);
+    return cmp || a.name.localeCompare(b.name, 'es');
   });
   return result;
 }
@@ -1219,6 +1274,9 @@ function renderReqSummary() {
   };
   const estados = countBy(i => parseReqNotes(i).estado);
   const areas = countBy(i => parseReqNotes(i).area);
+  // B3: conteo de items con datos incompletos
+  const sinReq = all.filter(i => !parseReqNotes(i).req).length;
+  const sinArea = all.filter(i => !parseReqNotes(i).area).length;
 
   const chipHtml = (label, count, color, active, type, value) => `
     <button class="req-summary-chip${active ? ' req-summary-chip-active' : ''}" data-sum-type="${type}" data-sum-value="${escapeHtml(value)}" title="Filtrar por ${escapeHtml(label)}">
@@ -1231,6 +1289,12 @@ function renderReqSummary() {
     estados.map(([e, c]) => chipHtml(e, c, REQ_ESTADO_HEX[e] || '#94a3b8', reqEstadoFilter === e, 'estado', e)).join('');
   const areaChips = chipHtml('Todas', all.length, '', reqAreaFilter === 'all', 'area', 'all') +
     areas.map(([a, c]) => chipHtml(a, c, '', reqAreaFilter === a, 'area', a)).join('');
+  const missingChips = chipHtml('Sin REQ', sinReq, '#f59e0b', reqMissingFilter === 'req', 'missing', 'req') +
+    chipHtml('Sin &aacute;rea', sinArea, '#f43f5e', reqMissingFilter === 'area', 'missing', 'area');
+  // B2: chips de acceso rápido al filtro por estado servicio
+  const estadosServicio = countBy(i => parseReqNotes(i).estadoServicio);
+  const estServicioChips = chipHtml('Todos', all.length, '', reqEstadoServicioFilter === 'all', 'estadoservicio', 'all') +
+    estadosServicio.map(([s, c]) => chipHtml(s, c, REQ_ESTADO_HEX[s] || '#94a3b8', reqEstadoServicioFilter === s, 'estadoservicio', s)).join('');
 
   dom.reqSummary.innerHTML = `
     <div class="req-summary-group">
@@ -1240,6 +1304,14 @@ function renderReqSummary() {
     <div class="req-summary-group">
       <span class="req-summary-title">Por &aacute;rea</span>
       <div class="req-summary-chips">${areaChips}</div>
+    </div>
+    <div class="req-summary-group">
+      <span class="req-summary-title">Por estado servicio</span>
+      <div class="req-summary-chips">${estServicioChips}</div>
+    </div>
+    <div class="req-summary-group">
+      <span class="req-summary-title">Datos incompletos</span>
+      <div class="req-summary-chips">${missingChips}</div>
     </div>`;
 }
 
@@ -1248,12 +1320,59 @@ function setReqSummaryFilter(type, value) {
   if (type === 'estado') {
     reqEstadoFilter = reqEstadoFilter === value ? 'all' : value;
     if (dom.reqEstadoFilter) dom.reqEstadoFilter.value = reqEstadoFilter;
-  } else {
+  } else if (type === 'area') {
     reqAreaFilter = reqAreaFilter === value ? 'all' : value;
     if (dom.reqAreaFilter) dom.reqAreaFilter.value = reqAreaFilter;
+  } else if (type === 'estadoservicio') {
+    reqEstadoServicioFilter = reqEstadoServicioFilter === value ? 'all' : value;
+    if (dom.reqEstadoServicioFilter) dom.reqEstadoServicioFilter.value = reqEstadoServicioFilter;
+  } else if (type === 'missing') {
+    reqMissingFilter = reqMissingFilter === value ? 'all' : value;
   }
   reqPage = 1;
   renderRequirements();
+}
+
+// ---- B4: tooltip de notas completas (al pasar el cursor sobre el ícono 📝) ----
+let reqTooltipEl = null;
+function getReqTooltipEl() {
+  if (!reqTooltipEl) {
+    reqTooltipEl = document.createElement('div');
+    reqTooltipEl.className = 'req-tooltip';
+    reqTooltipEl.style.display = 'none';
+    document.body.appendChild(reqTooltipEl);
+  }
+  return reqTooltipEl;
+}
+function positionReqTooltip(e) {
+  const tip = reqTooltipEl;
+  if (!tip || tip.style.display !== 'block') return;
+  const pad = 14;
+  let x = e.clientX + pad;
+  let y = e.clientY + pad;
+  if (x + tip.offsetWidth > window.innerWidth - 8) x = e.clientX - tip.offsetWidth - pad;
+  if (y + tip.offsetHeight > window.innerHeight - 8) y = e.clientY - tip.offsetHeight - pad;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+function showReqNotesTooltip(e) {
+  const trig = e.target.closest('[data-notes-id]');
+  if (!trig) return;
+  const item = items.find(i => String(i.id) === String(trig.dataset.notesId));
+  if (!item || !item.notes) return;
+  const tip = getReqTooltipEl();
+  tip.textContent = item.notes; // textContent: sin riesgo de XSS, preserva saltos de línea
+  tip.style.display = 'block';
+  positionReqTooltip(e);
+}
+function followReqNotesTooltip(e) {
+  positionReqTooltip(e);
+}
+function hideReqNotesTooltip(e) {
+  const tip = reqTooltipEl;
+  if (!tip) return;
+  if (e && e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('[data-notes-id]')) return;
+  tip.style.display = 'none';
 }
 
 // Select de cambio rápido de estado (sin abrir el modal)
@@ -1294,6 +1413,22 @@ function renderRequirements() {
     reqAreaFilter = areas.includes(reqAreaFilter) ? reqAreaFilter : 'all';
     dom.reqAreaFilter.value = reqAreaFilter;
   }
+  // B1: opciones dinámicas del filtro por responsable
+  const responsables = [...new Set(all.map(i => parseReqNotes(i).responsable || 'Sin asignar'))].sort((a, b) => a.localeCompare(b, 'es'));
+  if (dom.reqResponsableFilter) {
+    dom.reqResponsableFilter.innerHTML = '<option value="all">Todos los responsables</option>' +
+      responsables.map(r => `<option value="${escapeHtml(r)}">${escapeHtml(r)}</option>`).join('');
+    reqResponsableFilter = responsables.includes(reqResponsableFilter) ? reqResponsableFilter : 'all';
+    dom.reqResponsableFilter.value = reqResponsableFilter;
+  }
+  // B2: opciones dinámicas del filtro por estado servicio
+  const estadosServicio = [...new Set(all.map(i => parseReqNotes(i).estadoServicio || 'Sin asignar'))].sort((a, b) => a.localeCompare(b, 'es'));
+  if (dom.reqEstadoServicioFilter) {
+    dom.reqEstadoServicioFilter.innerHTML = '<option value="all">Todos los estados servicio</option>' +
+      estadosServicio.map(s => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join('');
+    reqEstadoServicioFilter = estadosServicio.includes(reqEstadoServicioFilter) ? reqEstadoServicioFilter : 'all';
+    dom.reqEstadoServicioFilter.value = reqEstadoServicioFilter;
+  }
 
   // Chips resumen (después de la sincronización de filtros para reflejar el estado real)
   renderReqSummary();
@@ -1305,6 +1440,15 @@ function renderRequirements() {
   if (reqPage < 1) reqPage = 1;
   const pageItems = filtered.slice((reqPage - 1) * pageSize, reqPage * pageSize);
   currentReqPageItems = pageItems;
+
+  // B5: indicador visual de la columna ordenada (antes del early return para
+  // que también se actualice cuando el filtro deja la tabla vacía)
+  document.querySelectorAll('.req-table thead th[data-sort]').forEach(th => {
+    th.classList.remove('req-th-sort-asc', 'req-th-sort-desc');
+    if (th.dataset.sort === reqSortKey) {
+      th.classList.add(reqSortDir === 1 ? 'req-th-sort-asc' : 'req-th-sort-desc');
+    }
+  });
 
   if (filtered.length === 0) {
     dom.reqTbody.innerHTML = '';
@@ -1318,12 +1462,13 @@ function renderRequirements() {
     const p = parseReqNotes(item);
     const color = reqEstadoColor(p.estado);
     const hasCost = item.cost != null && item.cost >= 0;
+    const notes = item.notes || '';
     return `
       <tr class="req-row">
-        <td class="req-code">${p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-no-code">Sin REQ</span>'}</td>
-        <td class="req-name">${escapeHtml(item.name)}</td>
+        <td class="req-code">${p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge" title="Este requerimiento no tiene código REQ">Sin REQ</span>'}</td>
+        <td class="req-name">${escapeHtml(item.name)}${notes ? `<span class="req-notes-trigger" data-notes-id="${escapeHtml(item.id)}" title="Ver notas completas">&#128221;</span>` : ''}</td>
         <td class="req-tipo">${escapeHtml(p.tipo || '—')}</td>
-        <td class="req-area">${escapeHtml(p.area || '—')}</td>
+        <td class="req-area">${p.area ? escapeHtml(p.area) : '<span class="req-missing-badge" title="Este requerimiento no tiene área asignada">Sin área</span>'}</td>
         <td class="req-area-usuaria">${escapeHtml(p.areaUsuaria || '—')}</td>
         <td class="req-resp">${escapeHtml(p.responsable || '—')}</td>
         <td>${buildReqEstadoSelect(item, color)}</td>
@@ -2995,6 +3140,33 @@ async function startApp() {
   if (dom.reqSearchInput) dom.reqSearchInput.addEventListener('input', (e) => { reqSearchQuery = e.target.value; reqPage = 1; renderRequirements(); });
   if (dom.reqEstadoFilter) dom.reqEstadoFilter.addEventListener('change', (e) => { reqEstadoFilter = e.target.value; reqPage = 1; renderRequirements(); });
   if (dom.reqAreaFilter) dom.reqAreaFilter.addEventListener('change', (e) => { reqAreaFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // B1: filtro por responsable
+  if (dom.reqResponsableFilter) dom.reqResponsableFilter.addEventListener('change', (e) => { reqResponsableFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // B2: filtro por estado servicio
+  if (dom.reqEstadoServicioFilter) dom.reqEstadoServicioFilter.addEventListener('change', (e) => { reqEstadoServicioFilter = e.target.value; reqPage = 1; renderRequirements(); });
+  // B5: ordenar columnas al hacer clic en el encabezado
+  const reqThead = document.querySelector('.req-table thead');
+  if (reqThead) {
+    reqThead.addEventListener('click', (e) => {
+      const th = e.target.closest('th[data-sort]');
+      if (!th) return;
+      const key = th.dataset.sort;
+      if (reqSortKey === key) {
+        reqSortDir = -reqSortDir;
+      } else {
+        reqSortKey = key;
+        reqSortDir = 1;
+      }
+      reqPage = 1;
+      renderRequirements();
+    });
+  }
+  // B4: tooltip de notas completas sobre la fila
+  if (dom.reqTbody) {
+    dom.reqTbody.addEventListener('mouseover', showReqNotesTooltip);
+    dom.reqTbody.addEventListener('mousemove', followReqNotesTooltip);
+    dom.reqTbody.addEventListener('mouseout', hideReqNotesTooltip);
+  }
   if (dom.reqPagination) dom.reqPagination.addEventListener('click', (e) => {
     const b = e.target.closest('.req-page-btn');
     if (!b || b.disabled) return;

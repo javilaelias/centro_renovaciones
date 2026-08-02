@@ -421,6 +421,12 @@
           <select id="reqAreaFilter" class="req-select" title="Filtrar por &aacute;rea">
             <option value="all">Todas las &aacute;reas</option>
           </select>
+          <select id="reqResponsableFilter" class="req-select" title="Filtrar por responsable">
+            <option value="all">Todos los responsables</option>
+          </select>
+          <select id="reqEstadoServicioFilter" class="req-select" title="Filtrar por estado servicio">
+            <option value="all">Todos los estados servicio</option>
+          </select>
           <div class="cal-export-actions">
             <button class="cal-export-btn" onclick="exportReqCsv()" title="Exportar requerimientos a CSV">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -442,15 +448,15 @@
           <table class="req-table" id="reqTable">
             <thead>
               <tr>
-                <th>REQ</th>
-                <th>Requerimiento</th>
-                <th>Tipo</th>
-                <th>&Aacute;rea</th>
-                <th>&Aacute;rea usuaria</th>
-                <th>Responsable</th>
-                <th>Estado</th>
-                <th>Empresa/Proveedor</th>
-                <th>Costo</th>
+                <th class="req-th-sort" data-sort="req" title="Ordenar por REQ">REQ</th>
+                <th class="req-th-sort" data-sort="name" title="Ordenar por requerimiento">Requerimiento</th>
+                <th class="req-th-sort" data-sort="tipo" title="Ordenar por tipo">Tipo</th>
+                <th class="req-th-sort" data-sort="area" title="Ordenar por &aacute;rea">&Aacute;rea</th>
+                <th class="req-th-sort" data-sort="areaUsuaria" title="Ordenar por &aacute;rea usuaria">&Aacute;rea usuaria</th>
+                <th class="req-th-sort" data-sort="responsable" title="Ordenar por responsable">Responsable</th>
+                <th class="req-th-sort" data-sort="estado" title="Ordenar por estado">Estado</th>
+                <th class="req-th-sort" data-sort="empresa" title="Ordenar por empresa/proveedor">Empresa/Proveedor</th>
+                <th class="req-th-sort" data-sort="cost" title="Ordenar por costo">Costo</th>
                 <th>Hoja de ruta</th>
                 <th>Adjunto</th>
                 <th>Acciones</th>

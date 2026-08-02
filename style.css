@@ -2123,11 +2123,85 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
   white-space: nowrap;
 }
 
-.req-no-code {
-  font-size: 0.74rem;
-  color: var(--primary-400);
-  font-style: italic;
+/* B3: badge de datos faltantes (Sin REQ / Sin área) */
+.req-missing-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  border: 1px solid #fde68a;
 }
+[data-theme="dark"] .req-missing-badge {
+  background: rgba(245, 158, 11, 0.14);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+
+/* B4: ícono 📝 de notas completas */
+.req-notes-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  border-radius: 6px;
+  background: var(--accent-50);
+  color: var(--accent-600);
+  font-size: 0.72rem;
+  cursor: help;
+  vertical-align: middle;
+  transition: all 0.15s var(--ease);
+}
+.req-notes-trigger:hover {
+  background: var(--accent-100);
+  transform: scale(1.12);
+}
+.req-tooltip {
+  position: fixed;
+  z-index: 10000;
+  max-width: 440px;
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--primary-800);
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  pointer-events: none;
+}
+[data-theme="dark"] .req-tooltip {
+  background: #1e293b;
+  border: 1px solid var(--primary-600);
+}
+
+/* B5: encabezados de columna ordenables */
+.req-th-sort {
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s var(--ease);
+}
+.req-th-sort:hover { color: var(--accent-600); }
+.req-th-sort::after {
+  content: '\2195';
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 0.62rem;
+  opacity: 0.35;
+  transition: opacity 0.15s var(--ease);
+}
+.req-th-sort:hover::after { opacity: 0.85; }
+.req-th-sort-asc::after { content: '\25B2'; opacity: 1; color: var(--accent-600); }
+.req-th-sort-desc::after { content: '\25BC'; opacity: 1; color: var(--accent-600); }
 
 .req-name {
   font-weight: 600;
