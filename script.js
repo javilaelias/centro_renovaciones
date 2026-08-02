@@ -42,7 +42,7 @@ let reqEstadoFilter = 'all';
 let reqAreaFilter = 'all';
 let reqResponsableFilter = 'all';
 let reqEstadoServicioFilter = 'all';
-let reqMissingFilter = 'all'; // 'all' | 'req' | 'area' (datos incompletos)
+let reqMissingFilter = 'all'; // 'all' | 'req' | 'area' | 'adjunto' | 'responsable' | 'costo' | 'ingreso' (datos incompletos)
 let reqSortKey = '';          // columna de ordenamiento activa (B5)
 let reqSortDir = 1;           // 1 = asc, -1 = desc
 let reqAreaUsuariaFilter = 'all'; // C3: filtro por área usuaria
@@ -55,6 +55,53 @@ let reqIngresoFrom = '';          // F1: rango de fechas de ingreso (desde)
 let reqIngresoTo = '';            // F1: rango de fechas de ingreso (hasta)
 let reqCreacionFrom = '';         // F1: rango de fechas de creación (desde)
 let reqCreacionTo = '';           // F1: rango de fechas de creación (hasta)
+// G1: columnas de la tabla de Requerimientos (key, label, ordenable, visible por defecto)
+const REQ_COLUMNS = [
+  { key: 'req',         label: 'REQ',                 sortable: true,  def: true },
+  { key: 'name',        label: 'Requerimiento',       sortable: true,  def: true },
+  { key: 'ingreso',     label: 'Ingreso',             sortable: true,  def: true },
+  { key: 'creacion',    label: 'Creado',              sortable: true,  def: true },
+  { key: 'tipo',        label: 'Tipo',                sortable: true,  def: true },
+  { key: 'area',        label: 'Área',                sortable: true,  def: true },
+  { key: 'areaUsuaria', label: 'Área usuaria',        sortable: true,  def: true },
+  { key: 'responsable', label: 'Responsable',         sortable: true,  def: true },
+  { key: 'estado',      label: 'Estado',              sortable: true,  def: true },
+  { key: 'estadoServicio', label: 'Estado servicio',  sortable: true,  def: true },
+  { key: 'prioridad',   label: 'Prioridad',           sortable: true,  def: true },
+  { key: 'empresa',     label: 'Empresa/Proveedor',   sortable: true,  def: true },
+  { key: 'cost',        label: 'Costo',               sortable: true,  def: true },
+  { key: 'hr',          label: 'Hoja de ruta',        sortable: false, def: true },
+  { key: 'adjunto',     label: 'Adjunto',             sortable: false, def: true },
+  { key: 'acciones',    label: 'Acciones',            sortable: false, def: true, fixed: true },
+];
+const REQ_COLS_KEY = 'centro_req_cols';
+let reqVisibleCols = defaultReqVisibleCols(); // se refresca en restoreReqCols()
+function defaultReqVisibleCols() {
+  const o = {};
+  REQ_COLUMNS.forEach(c => { o[c.key] = c.def; });
+  return o;
+}
+function restoreReqCols() {
+  try {
+    const raw = localStorage.getItem(REQ_COLS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      const o = defaultReqVisibleCols();
+      REQ_COLUMNS.forEach(c => {
+        if (!c.fixed && parsed && typeof parsed[c.key] === 'boolean') o[c.key] = parsed[c.key];
+      });
+      reqVisibleCols = o;
+      return;
+    }
+  } catch (e) { /* datos corruptos */ }
+  reqVisibleCols = defaultReqVisibleCols();
+}
+function saveReqCols() {
+  try { localStorage.setItem(REQ_COLS_KEY, JSON.stringify(reqVisibleCols)); } catch (e) { /* storage no disponible */ }
+}
+function visibleReqColCount() {
+  return REQ_COLUMNS.filter(c => reqVisibleCols[c.key]).length;
+}
 // F3: colores de estado configurables (mapa estado -> clase CSS, sobreescribe REQ_ESTADO_COLORS)
 let reqEstadoColors = {};
 let reqEstadoColorDraft = {};     // borrador en el modal de Configuración
@@ -262,6 +309,13 @@ function cacheDom() {
   dom.reqEmpty = $('#reqEmpty');
   dom.reqSummary = $('#reqSummary');
   dom.reqPagination = $('#reqPagination');
+  dom.reqTheadRow = $('#reqTheadRow');
+  dom.reqColsBtn = $('#reqColsBtn');
+  dom.reqColsMenu = $('#reqColsMenu');
+  dom.reqDetailOverlay = $('#reqDetailOverlay');
+  dom.reqDetailContent = $('#reqDetailContent');
+  dom.reqDetailClose = $('#reqDetailClose');
+  dom.reqDetailEditBtn = $('#reqDetailEditBtn');
   // Requerimientos settings (editor de estados)
   dom.reqEstadosList = $('#reqEstadosList');
   dom.reqEstadoInput = $('#reqEstadoInput');
@@ -1319,11 +1373,19 @@ function getFilteredReqItems() {
   if (reqEstadoServicioFilter !== 'all') {
     result = result.filter(item => (parseReqNotes(item).estadoServicio || 'Sin asignar') === reqEstadoServicioFilter);
   }
-  // B3: indicador/filtro de items sin REQ o sin Área
+  // B3/G2: indicador/filtro de items con datos incompletos
   if (reqMissingFilter === 'req') {
     result = result.filter(item => !parseReqNotes(item).req);
   } else if (reqMissingFilter === 'area') {
     result = result.filter(item => !parseReqNotes(item).area);
+  } else if (reqMissingFilter === 'adjunto') {
+    result = result.filter(item => !parseReqNotes(item).adjunto);
+  } else if (reqMissingFilter === 'responsable') {
+    result = result.filter(item => !parseReqNotes(item).responsable);
+  } else if (reqMissingFilter === 'costo') {
+    result = result.filter(item => item.cost == null || item.cost < 0);
+  } else if (reqMissingFilter === 'ingreso') {
+    result = result.filter(item => !parseReqNotes(item).ingreso);
   }
   // C3: filtro por área usuaria
   if (reqAreaUsuariaFilter !== 'all') {
@@ -1468,9 +1530,13 @@ function renderReqSummary() {
   };
   const estados = countBy(i => parseReqNotes(i).estado);
   const areas = countBy(i => parseReqNotes(i).area);
-  // B3: conteo de items con datos incompletos
+  // B3/G2: conteo de items con datos incompletos (ampliado)
   const sinReq = all.filter(i => !parseReqNotes(i).req).length;
   const sinArea = all.filter(i => !parseReqNotes(i).area).length;
+  const sinAdjunto = all.filter(i => !parseReqNotes(i).adjunto).length;
+  const sinResponsable = all.filter(i => !parseReqNotes(i).responsable).length;
+  const sinCosto = all.filter(i => i.cost == null || i.cost < 0).length;
+  const sinIngreso = all.filter(i => !parseReqNotes(i).ingreso).length;
 
   const chipHtml = (label, count, color, active, type, value) => `
     <button class="req-summary-chip${active ? ' req-summary-chip-active' : ''}" data-sum-type="${type}" data-sum-value="${escapeHtml(value)}" title="Filtrar por ${escapeHtml(label)}">
@@ -1491,7 +1557,11 @@ function renderReqSummary() {
   const areaUsuariaChips = chipHtml('Todas', all.length, '', reqAreaUsuariaFilter === 'all', 'areausuaria', 'all') +
     areasUsuarias.map(([a, c]) => chipHtml(a, c, '', reqAreaUsuariaFilter === a, 'areausuaria', a)).join('');
   const missingChips = chipHtml('Sin REQ', sinReq, '#f59e0b', reqMissingFilter === 'req', 'missing', 'req') +
-    chipHtml('Sin &aacute;rea', sinArea, '#f43f5e', reqMissingFilter === 'area', 'missing', 'area');
+    chipHtml('Sin &aacute;rea', sinArea, '#f43f5e', reqMissingFilter === 'area', 'missing', 'area') +
+    chipHtml('Sin adjunto', sinAdjunto, '#94a3b8', reqMissingFilter === 'adjunto', 'missing', 'adjunto') +
+    chipHtml('Sin responsable', sinResponsable, '#64748b', reqMissingFilter === 'responsable', 'missing', 'responsable') +
+    chipHtml('Sin costo', sinCosto, '#f97316', reqMissingFilter === 'costo', 'missing', 'costo') +
+    chipHtml('Sin ingreso', sinIngreso, '#8b5cf6', reqMissingFilter === 'ingreso', 'missing', 'ingreso');
   // B2: chips de acceso rápido al filtro por estado servicio
   const estadosServicio = countBy(i => parseReqNotes(i).estadoServicio);
   const estServicioChips = chipHtml('Todos', all.length, '', reqEstadoServicioFilter === 'all', 'estadoservicio', 'all') +
@@ -1597,11 +1667,35 @@ function buildReqEstadoSelect(item, colorClass) {
   return `<select class="req-estado-select ${colorClass}" data-id="${item.id}" onchange="quickSetEstado(this)" title="${hint}">${options}</select>`;
 }
 
+// G1: renderiza el encabezado de la tabla con las columnas visibles configuradas
+function renderReqThead() {
+  if (!dom.reqTheadRow) return;
+  dom.reqTheadRow.innerHTML = REQ_COLUMNS.map(c => {
+    const hidden = !reqVisibleCols[c.key] ? ' req-col-hidden' : '';
+    const sortable = c.sortable ? ` class="req-th-sort${hidden}" data-sort="${c.key}" title="Ordenar por ${c.label}"` : ` class="req-th${hidden}"`;
+    return `<th${sortable}>${escapeHtml(c.label)}</th>`;
+  }).join('');
+}
+
+// G1: reconstruye el menú desplegable de columnas visibles
+function renderReqColsMenu() {
+  if (!dom.reqColsMenu) return;
+  dom.reqColsMenu.innerHTML = REQ_COLUMNS.map(c => {
+    if (c.fixed) return '';
+    return `<label class="req-col-opt">
+      <input type="checkbox" data-col="${c.key}" ${reqVisibleCols[c.key] ? 'checked' : ''} />
+      <span>${escapeHtml(c.label)}</span>
+    </label>`;
+  }).join('') + '<button type="button" class="req-col-reset">&#x21BA; Restablecer columnas</button>';
+}
+
 function renderRequirements() {
   const all = getReqItems();
   const filtered = getFilteredReqItems();
   dom.reqTitle.textContent = 'Gestión de Requerimientos';
   dom.reqCount.textContent = `${filtered.length} de ${all.length} ítems`;
+  renderReqThead();
+  renderReqColsMenu();
   // C2: refleja el estado del toggle de agrupación por área
   if (dom.reqGroupToggle) {
     dom.reqGroupToggle.classList.toggle('req-group-toggle-active', reqGroupByArea);
@@ -1697,25 +1791,27 @@ function renderRequirements() {
     const color = reqEstadoColor(p.estado);
     const hasCost = item.cost != null && item.cost >= 0;
     const notes = item.notes || '';
+    const cell = (key, inner) => `<td class="${key}${reqVisibleCols[key] ? '' : ' req-col-hidden'}" data-col="${key}">${inner}</td>`;
     return `
       <tr class="req-row">
-        <td class="req-code">${p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge" title="Este requerimiento no tiene código REQ">Sin REQ</span>'}</td>
-        <td class="req-name">${escapeHtml(item.name)}${notes ? `<span class="req-notes-trigger" data-notes-id="${escapeHtml(item.id)}" title="Ver notas completas">&#128221;</span>` : ''}</td>
-        <td class="req-ingreso">${escapeHtml(p.ingreso || '—')}</td>
-        <td class="req-creacion">${escapeHtml(p.creacion || '—')}</td>
-        <td class="req-tipo">${escapeHtml(p.tipo || '—')}</td>
-        <td class="req-area">${p.area ? escapeHtml(p.area) : '<span class="req-missing-badge" title="Este requerimiento no tiene área asignada">Sin área</span>'}</td>
-        <td class="req-area-usuaria">${escapeHtml(p.areaUsuaria || '—')}</td>
-        <td class="req-resp">${escapeHtml(p.responsable || '—')}</td>
-        <td>${buildReqEstadoSelect(item, color)}</td>
-        <td class="req-estado-servicio">${escapeHtml(p.estadoServicio || '—')}</td>
-        <td class="req-prioridad">${p.prioridad ? `<span class="req-prioridad-badge" style="background:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}18;color:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'};border:1px solid ${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}44;">${escapeHtml(p.prioridad)}</span>` : '<span class="req-no-hr">—</span>'}</td>
-        <td class="req-provider">${escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim() || '—'))}</td>
-        <td class="req-cost">${hasCost ? escapeHtml(formatCurrency(item.cost)) : '—'}</td>
-        <td class="req-hr">${(p.hr && p.hr.length) ? `<div class="req-hr-cell">${p.hr.slice(0, 3).map(c => `<button type="button" class="req-hr-badge" title="Abrir ${escapeHtml(c)} en el sistema de trámite" onclick="openTramite('${escapeHtml(c)}')">${escapeHtml(c)}</button>`).join('')}${p.hr.length > 3 ? `<span class="req-hr-more">+${p.hr.length - 3}</span>` : ''}</div>` : '<span class="req-no-hr">—</span>'}</td>
-        <td class="req-adjunto">${p.adjunto ? `<a class="req-adjunto-link" href="${escapeHtml(p.adjunto)}" target="_blank" rel="noopener" title="Abrir adjunto: ${escapeHtml(p.adjunto)}">&#128279; ${escapeHtml(getHostname(p.adjunto))}</a>` : '<span class="req-no-hr">—</span>'}</td>
-        <td class="req-actions">
+        ${cell('req', p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge" title="Este requerimiento no tiene código REQ">Sin REQ</span>')}
+        ${cell('name', escapeHtml(item.name) + (notes ? `<span class="req-notes-trigger" data-notes-id="${escapeHtml(item.id)}" title="Ver notas completas">&#128221;</span>` : ''))}
+        ${cell('ingreso', escapeHtml(p.ingreso || '—'))}
+        ${cell('creacion', escapeHtml(p.creacion || '—'))}
+        ${cell('tipo', escapeHtml(p.tipo || '—'))}
+        ${cell('area', p.area ? escapeHtml(p.area) : '<span class="req-missing-badge" title="Este requerimiento no tiene área asignada">Sin área</span>')}
+        ${cell('areaUsuaria', escapeHtml(p.areaUsuaria || '—'))}
+        ${cell('responsable', escapeHtml(p.responsable || '—'))}
+        ${cell('estado', buildReqEstadoSelect(item, color))}
+        ${cell('estadoServicio', escapeHtml(p.estadoServicio || '—'))}
+        ${cell('prioridad', p.prioridad ? `<span class="req-prioridad-badge" style="background:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}18;color:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'};border:1px solid ${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}44;">${escapeHtml(p.prioridad)}</span>` : '<span class="req-no-hr">—</span>')}
+        ${cell('empresa', escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim() || '—')))}
+        ${cell('cost', hasCost ? escapeHtml(formatCurrency(item.cost)) : '—')}
+        ${cell('hr', (p.hr && p.hr.length) ? `<div class="req-hr-cell">${p.hr.slice(0, 3).map(c => `<button type="button" class="req-hr-badge" title="Abrir ${escapeHtml(c)} en el sistema de trámite" onclick="openTramite('${escapeHtml(c)}')">${escapeHtml(c)}</button>`).join('')}${p.hr.length > 3 ? `<span class="req-hr-more">+${p.hr.length - 3}</span>` : ''}</div>` : '<span class="req-no-hr">—</span>')}
+        ${cell('adjunto', p.adjunto ? `<a class="req-adjunto-link" href="${escapeHtml(p.adjunto)}" target="_blank" rel="noopener" title="Abrir adjunto: ${escapeHtml(p.adjunto)}">&#128279; ${escapeHtml(getHostname(p.adjunto))}</a>` : '<span class="req-no-hr">—</span>')}
+        <td class="req-actions" data-col="acciones">
           <input type="date" class="req-date-input" title="Asignar fecha de vencimiento (sale de pendientes)" min="${new Date().toISOString().split('T')[0]}" onchange="quickSetDate('${item.id}', this.value)" />
+          <button class="item-action-btn detail" onclick="openReqDetail('${item.id}')" data-tooltip="Ver ficha completa">&#128065;</button>
           <button class="item-action-btn history" onclick="openReqHistory('${item.id}')" data-tooltip="Ver historial de estados">&#128337;&#xFE0F;</button>
           <button class="item-action-btn comment" onclick="openReqComments('${item.id}')" data-tooltip="Ver y agregar comentarios">&#128172;</button>
           <button class="item-action-btn duplicate" onclick="duplicateItem('${item.id}')" data-tooltip="Duplicar requerimiento">&#128209;</button>
@@ -1735,7 +1831,7 @@ function renderRequirements() {
       g.items.push(item);
     }
     rowsHtml = groups.map(g =>
-      `<tr class="req-group-row"><td colspan="16">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
+      `<tr class="req-group-row"><td colspan="${visibleReqColCount()}">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
       g.items.map(buildRow).join('')
     ).join('');
   } else {
@@ -1868,6 +1964,15 @@ async function quickSetEstado(selectEl) {
 
 async function quickSetDate(id, dateStr) {
   if (!dateStr) return;
+  // G3: no se permite una fecha en el pasado (saca el ítem de pendientes de forma confusa)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const chosen = new Date(dateStr + 'T00:00:00');
+  if (isNaN(chosen.getTime()) || chosen < today) {
+    showToast('La fecha de vencimiento debe ser hoy o una fecha futura', 'error');
+    render(); // limpia el input visualmente
+    return;
+  }
   try {
     await updateItem(id, { expiryDate: dateStr });
     showToast('Fecha asignada: ' + formatDate(dateStr), 'success');
@@ -2939,6 +3044,46 @@ function closeReqHistory() {
   currentReqHistoryName = '';
 }
 
+// G4: ficha de detalle del requerimiento (solo lectura, con todos los campos)
+function openReqDetail(id) {
+  const item = items.find(i => String(i.id) === String(id));
+  if (!item || !dom.reqDetailOverlay) return;
+  const p = parseReqNotes(item);
+  const notes = item.notes || '';
+  const colorClass = reqEstadoColor(p.estado);
+  const row = (label, valueHtml) => valueHtml ?
+    `<div class="req-detail-row"><span class="req-detail-label">${escapeHtml(label)}</span><span class="req-detail-value">${valueHtml}</span></div>` : '';
+  const estadoBadge = `<span class="req-estado-badge-det ${colorClass}">${escapeHtml(p.estado || 'Sin asignar')}</span>`;
+  const rows =
+    row('REQ', p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge">Sin REQ</span>') +
+    row('Requerimiento', `<b>${escapeHtml(item.name)}</b>`) +
+    row('Tipo', escapeHtml(p.tipo || '—')) +
+    row('Área', escapeHtml(p.area || '—')) +
+    row('Área usuaria', escapeHtml(p.areaUsuaria || '—')) +
+    row('Responsable', escapeHtml(p.responsable || '—')) +
+    row('Estado', estadoBadge) +
+    row('Estado servicio', escapeHtml(p.estadoServicio || '—')) +
+    row('Prioridad', p.prioridad ? `<span class="req-prioridad-badge">${escapeHtml(p.prioridad)}</span>` : '—') +
+    row('Empresa/Proveedor', escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || p.empresa || '—'))) +
+    row('Costo', item.cost != null && item.cost >= 0 ? escapeHtml(formatCurrency(item.cost)) : '—') +
+    row('Fecha de ingreso', escapeHtml(p.ingreso || '—')) +
+    row('Fecha de creación', escapeHtml(p.creacion || '—')) +
+    row('Hoja de ruta', (p.hr && p.hr.length) ? p.hr.map(c => `<button type="button" class="req-hr-badge" onclick="openTramite('${escapeHtml(c)}')">${escapeHtml(c)}</button>`).join(' ') : '—') +
+    row('Adjunto', p.adjunto ? `<a class="req-adjunto-link" href="${escapeHtml(p.adjunto)}" target="_blank" rel="noopener">&#128279; ${escapeHtml(getHostname(p.adjunto))}</a>` : '—');
+  const comments = (p.comentarios && p.comentarios.length)
+    ? `<div class="req-detail-section"><h4 class="req-detail-section-title">💬 Comentarios</h4><ul class="req-detail-comments">${p.comentarios.map(c => `<li>${escapeHtml(c)}</li>`).join('')}</ul></div>` : '';
+  const notasHtml = notes
+    ? `<div class="req-detail-section"><h4 class="req-detail-section-title">📝 Notas completas</h4><pre class="req-detail-notes">${escapeHtml(notes)}</pre></div>` : '';
+  dom.reqDetailContent.innerHTML = `<div class="req-detail-grid">${rows}</div>${comments}${notasHtml}`;
+  if (dom.reqDetailEditBtn) dom.reqDetailEditBtn.style.display = isAdmin() ? 'inline-flex' : 'none';
+  dom.reqDetailEditBtn.onclick = () => { closeReqDetail(); openEdit(id); };
+  dom.reqDetailOverlay.style.display = 'flex';
+}
+
+function closeReqDetail() {
+  if (dom.reqDetailOverlay) dom.reqDetailOverlay.style.display = 'none';
+}
+
 function closeConfirm() { dom.confirmOverlay.style.display = 'none'; deleteTargetId = null; }
 
 async function executeDelete() {
@@ -3563,9 +3708,10 @@ async function startApp() {
     if (currentView === 'req') renderRequirements();
   } catch (err) { /* usa la lista por defecto */ }
 
-  // Restaura los filtros y la página activa de Requerimientos de la sesión anterior.
-  // Va fuera del try de settings para que siempre se ejecute (incluso en modo offline).
+  // Restaura los filtros, columnas visibles y la página activa de Requerimientos
+  // de la sesión anterior. Va fuera del try de settings para que siempre se ejecute.
   restoreReqFilters();
+  restoreReqCols();
   applyHashRoute();
 
   requestNotificationPermission();
@@ -3629,6 +3775,9 @@ async function startApp() {
   if (dom.passwordForm) dom.passwordForm.addEventListener('submit', handlePasswordSubmit);
   if (dom.historyClose) dom.historyClose.addEventListener('click', closeReqHistory);
   if (dom.historyOverlay) dom.historyOverlay.addEventListener('click', (e) => { if (e.target === dom.historyOverlay) closeReqHistory(); });
+  // G4: ficha de detalle
+  if (dom.reqDetailClose) dom.reqDetailClose.addEventListener('click', closeReqDetail);
+  if (dom.reqDetailOverlay) dom.reqDetailOverlay.addEventListener('click', (e) => { if (e.target === dom.reqDetailOverlay) closeReqDetail(); });
   if (dom.historyExportBtn) dom.historyExportBtn.addEventListener('click', exportReqHistoryCsv);
   dom.settingsForm.addEventListener('submit', handleSettingsSubmit);
   dom.testEmailBtn.addEventListener('click', handleTestEmail);
@@ -3704,6 +3853,33 @@ async function startApp() {
   if (dom.commentsTextarea) dom.commentsTextarea.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addReqComment(); }
   });
+  // G1: menú desplegable de columnas visibles
+  if (dom.reqColsBtn && dom.reqColsMenu) {
+    dom.reqColsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dom.reqColsMenu.style.display !== 'none';
+      dom.reqColsMenu.style.display = isOpen ? 'none' : 'block';
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.req-cols-toggle')) dom.reqColsMenu.style.display = 'none';
+    });
+    dom.reqColsMenu.addEventListener('change', (e) => {
+      const cb = e.target.closest('input[type="checkbox"][data-col]');
+      if (!cb) return;
+      reqVisibleCols[cb.dataset.col] = cb.checked;
+      saveReqCols();
+      renderRequirements(); // re-renderiza encabezado y filas para aplicar el ocultado
+    });
+    dom.reqColsMenu.addEventListener('click', (e) => {
+      if (e.target.closest('.req-col-reset')) {
+        reqVisibleCols = defaultReqVisibleCols();
+        saveReqCols();
+        renderReqColsMenu();
+        renderReqThead();
+        renderRequirements();
+      }
+    });
+  }
   // E3: menú desplegable "Exportar todos"
   if (dom.reqExportAllBtn && dom.reqExportAllMenu) {
     dom.reqExportAllBtn.addEventListener('click', (e) => {

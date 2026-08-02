@@ -12,6 +12,7 @@
 > ✅ **Serie E implementada el 2026-08-02** (E1 responsable editable, E2 comentarios por ítem, E3 exportar TODOS, E4 fecha de creación, E5 responsive, E6 permisos por rol).
 > ✅ **Variante TODOS → Oficial añadida el 2026-08-02** (la plantilla oficial PDF también exporta todos los requerimientos ignorando filtros).
 > ✅ **Serie F implementada el 2026-08-02** (F1 filtro por rango de fechas de ingreso/creación, F2 filtro con/sin adjunto, F3 colores de estado configurables, F4 búsqueda por hoja de ruta y adjunto, F5 dashboard con acceso directo a Requerimientos).
+> ✅ **Serie G implementada el 2026-08-02** (G1 columnas visibles configurables, G2 chips de datos incompletos ampliados, G3 validación de fecha de vencimiento, G4 ficha de detalle del requerimiento, G5 cobertura 1.2 a ✅).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -76,7 +77,7 @@ Pero las **notas reales contienen 17+ campos**, muchos sin exponer en la vista:
 2. ¿Los analistas deben poder **editar cualquier campo** o solo estado/fecha (rol actual)?
 3. ¿Se necesita **historial/auditoría** de cambios de estado (quién y cuándo)? *(ya existe historial de estados por ítem)*
 4. ¿Algún estado del flujo real (OAB, presupuestal, conformidad) debe tener **color/distinción** propia? ✅ **Resuelto con F3**: los colores son configurables estado por estado desde Configuración (con 8 clases: blue, gray, purple, cyan, amber, orange, green, red), y se aplican en la tabla, el desplegable rápido, los chips y la dona del dashboard.
-5. ¿La **fecha de vencimiento** que se asigna a un requerimiento debe tener un formato o regla especial?
+5. ¿La **fecha de vencimiento** que se asigna a un requerimiento debe tener un formato o regla especial? ✅ **Resuelto con G3**: no se permite asignar una fecha en el pasado (debe ser hoy o futura) al sacar el ítem de pendientes.
 
 ---
 
@@ -87,7 +88,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | Punto de la plantilla | Qué evalúa | Cobertura actual |
 |---|---|---|
 | 1.1 | Columnas (REQ, Requerimiento, Tipo, Área, Responsable, Estado, Costo) | ✅ Cubierto y ampliado: + Área usuaria, Ingreso, Estado servicio, Prioridad, Empresa/Proveedor, Hoja de ruta, Adjunto, Notas completas (15 columnas) |
-| 1.2 | ¿Falta alguna columna? (fecha de ingreso, prioridad, enlace a documento) | 🟡 Enlace a documento = columna Adjunto (A2). **Fecha de ingreso y prioridad** no existen en los datos → candidatos D1/D2 |
+| 1.2 | ¿Falta alguna columna? (fecha de ingreso, prioridad, enlace a documento) | ✅ Enlace a documento = columna Adjunto (A2). **Fecha de ingreso (D1) y prioridad (D2)** implementadas y editables |
 | 1.3 | Datos de Tipo/Área/Responsable/Estado se leen bien de las notas | ✅ parseo validado contra los 70 pendientes reales |
 | 1.4 | Requerimientos sin código REQ se identifican | ✅ Badge "Sin REQ" + chip "Datos incompletos" (B3) |
 | 1.5 | Orden por código REQ esperado | ✅ Por defecto REQ asc; ordenable por cualquier columna (B5) |
@@ -113,7 +114,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 7.1 / 7.2 | Registro con Gmail y login posterior | ✅ Registro de analistas + login |
 | 7.3 | Rol analista con permisos distintos al admin | ✅ **Analista solo estado/fecha en requerimientos (E6)**: edición completa y eliminación exclusivas de admin (frontend + servidor 403) |
 
-**Cobertura:** 31/31 puntos con al menos cobertura parcial · 24 ✅ · 7 🟡 · 0 ⬜
+**Cobertura:** 31/31 puntos con al menos cobertura parcial · 25 ✅ · 6 🟡 · 0 ⬜
 
 > **Cómo se fusionará:** cuando la plantilla regrese completada, cada observación ✏️ se insertará en la fila correspondiente de esta tabla (columna "Observación del analista") y los ajustes nuevos pasarán a la sección de candidatos D.
 
@@ -140,8 +141,13 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 | F3 | **Colores de estado configurables** (editor en Configuración; se aplican en la tabla, chips y dona del dashboard) | Decisión 4 | ✅ Implementado 2026-08-02 |
 | F4 | **Búsqueda ampliada** a códigos de hoja de ruta y enlace adjunto | 2.1 | ✅ Implementado 2026-08-02 |
 | F5 | **Dashboard Inicio**: el total de requerimientos y las barras/dona navegan a la vista con el filtro aplicado | 6.x | ✅ Implementado 2026-08-02 |
+| G1 | **Columnas visibles configurables** (ocultar/mostrar cualquiera de las 16, con persistencia) | 6.2 | ✅ Implementado 2026-08-02 |
+| G2 | **Chips datos incompletos ampliados** (Sin adjunto, Sin responsable, Sin costo, Sin ingreso) | 1.4, 2.4 | ✅ Implementado 2026-08-02 |
+| G3 | **Validación de fecha de vencimiento** (no se permite una fecha en el pasado al sacar de pendientes) | Decisión 5 | ✅ Implementado 2026-08-02 |
+| G4 | **Ficha de detalle del requerimiento** (modal solo lectura con todos los campos, comentarios y notas) | 3.4 | ✅ Implementado 2026-08-02 |
+| G5 | **Cobertura 1.2 actualizada a ✅** (D1/D2 ya implementados) | Doc | ✅ Implementado 2026-08-02 |
 
-**Serie E y F completas.** Tabla de Requerimientos: 16 columnas (REQ · Requerimiento · Ingreso · **Creado** · Tipo · Área · Área usuaria · Responsable · Estado · Estado servicio · Prioridad · Empresa/Proveedor · Costo · Hoja de ruta · Adjunto · Acciones) · Filtros: búsqueda, estado, área, área usuaria, responsable, estado servicio, tipo, adjunto, costo y rangos de fecha de ingreso/creación.
+**Series E, F y G completas.** Tabla de Requerimientos: 16 columnas (REQ · Requerimiento · Ingreso · **Creado** · Tipo · Área · Área usuaria · Responsable · Estado · Estado servicio · Prioridad · Empresa/Proveedor · Costo · Hoja de ruta · Adjunto · Acciones) · Filtros: búsqueda, estado, área, área usuaria, responsable, estado servicio, tipo, adjunto, costo y rangos de fecha de ingreso/creación.
 
 ---
 

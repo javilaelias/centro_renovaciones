@@ -489,27 +489,21 @@
         </div>
         <!-- Resumen por estado y área (chips) -->
         <div class="req-summary" id="reqSummary"></div>
+        <div class="req-table-toolbar">
+          <div class="req-table-toolbar-left">
+            <div class="req-cols-toggle">
+              <button type="button" class="cal-export-btn req-cols-btn" id="reqColsBtn" title="Mostrar u ocultar columnas">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                Columnas <span class="req-export-all-caret">&#9662;</span>
+              </button>
+              <div class="req-cols-menu" id="reqColsMenu" style="display:none;"></div>
+            </div>
+          </div>
+        </div>
         <div class="req-table-wrap">
           <table class="req-table" id="reqTable">
             <thead>
-              <tr>
-                <th class="req-th-sort" data-sort="req" title="Ordenar por REQ">REQ</th>
-                <th class="req-th-sort" data-sort="name" title="Ordenar por requerimiento">Requerimiento</th>
-                <th class="req-th-sort" data-sort="ingreso" title="Ordenar por fecha de ingreso">Ingreso</th>
-                <th class="req-th-sort" data-sort="creacion" title="Ordenar por fecha de creaci&oacute;n">Creado</th>
-                <th class="req-th-sort" data-sort="tipo" title="Ordenar por tipo">Tipo</th>
-                <th class="req-th-sort" data-sort="area" title="Ordenar por &aacute;rea">&Aacute;rea</th>
-                <th class="req-th-sort" data-sort="areaUsuaria" title="Ordenar por &aacute;rea usuaria">&Aacute;rea usuaria</th>
-                <th class="req-th-sort" data-sort="responsable" title="Ordenar por responsable">Responsable</th>
-                <th class="req-th-sort" data-sort="estado" title="Ordenar por estado">Estado</th>
-                <th class="req-th-sort" data-sort="estadoServicio" title="Ordenar por estado servicio">Estado servicio</th>
-                <th class="req-th-sort" data-sort="prioridad" title="Ordenar por prioridad">Prioridad</th>
-                <th class="req-th-sort" data-sort="empresa" title="Ordenar por empresa/proveedor">Empresa/Proveedor</th>
-                <th class="req-th-sort" data-sort="cost" title="Ordenar por costo">Costo</th>
-                <th>Hoja de ruta</th>
-                <th>Adjunto</th>
-                <th>Acciones</th>
-              </tr>
+              <tr id="reqTheadRow"></tr>
             </thead>
             <tbody id="reqTbody"></tbody>
           </table>
@@ -894,6 +888,24 @@
         <div class="comments-add">
           <textarea id="commentsTextarea" class="form-input form-textarea" placeholder="Escribe un comentario para este requerimiento..." rows="2" maxlength="500"></textarea>
           <button type="button" class="btn btn-primary comments-add-btn" id="commentsAddBtn">&#128172; Agregar comentario</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ficha de Detalle del Requerimiento Modal (G4) -->
+  <div class="modal-overlay" id="reqDetailOverlay" style="display:none;">
+    <div class="modal modal-lg" role="dialog" aria-modal="true" aria-labelledby="reqDetailTitle">
+      <div class="modal-header">
+        <h2 id="reqDetailTitle">&#128203; Detalle del requerimiento</h2>
+        <div class="modal-header-actions">
+          <button type="button" class="req-page-export" id="reqDetailEditBtn" style="display:none;">&#9998;&#xFE0F; Editar</button>
+          <button class="modal-close" id="reqDetailClose" aria-label="Cerrar">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="req-detail" id="reqDetailContent">
+          <div class="history-loading">Cargando detalle...</div>
         </div>
       </div>
     </div>
