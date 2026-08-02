@@ -454,11 +454,14 @@
               <tr>
                 <th class="req-th-sort" data-sort="req" title="Ordenar por REQ">REQ</th>
                 <th class="req-th-sort" data-sort="name" title="Ordenar por requerimiento">Requerimiento</th>
+                <th class="req-th-sort" data-sort="ingreso" title="Ordenar por fecha de ingreso">Ingreso</th>
                 <th class="req-th-sort" data-sort="tipo" title="Ordenar por tipo">Tipo</th>
                 <th class="req-th-sort" data-sort="area" title="Ordenar por &aacute;rea">&Aacute;rea</th>
                 <th class="req-th-sort" data-sort="areaUsuaria" title="Ordenar por &aacute;rea usuaria">&Aacute;rea usuaria</th>
                 <th class="req-th-sort" data-sort="responsable" title="Ordenar por responsable">Responsable</th>
                 <th class="req-th-sort" data-sort="estado" title="Ordenar por estado">Estado</th>
+                <th class="req-th-sort" data-sort="estadoServicio" title="Ordenar por estado servicio">Estado servicio</th>
+                <th class="req-th-sort" data-sort="prioridad" title="Ordenar por prioridad">Prioridad</th>
                 <th class="req-th-sort" data-sort="empresa" title="Ordenar por empresa/proveedor">Empresa/Proveedor</th>
                 <th class="req-th-sort" data-sort="cost" title="Ordenar por costo">Costo</th>
                 <th>Hoja de ruta</th>
@@ -526,6 +529,22 @@
           <div class="form-group">
             <label for="itemProvider" class="form-label">Proveedor / URL</label>
             <input type="url" id="itemProvider" class="form-input" placeholder="https://..." autocomplete="off" />
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itemPrioridad" class="form-label">Prioridad</label>
+            <select id="itemPrioridad" class="form-input" autocomplete="off">
+              <option value="">— Sin prioridad —</option>
+              <option value="Alta">Alta</option>
+              <option value="Media">Media</option>
+              <option value="Baja">Baja</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="itemIngreso" class="form-label">Fecha de ingreso</label>
+            <input type="date" id="itemIngreso" class="form-input" />
           </div>
         </div>
 

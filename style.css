@@ -2273,7 +2273,22 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
 .req-tipo,
 .req-area,
 .req-area-usuaria,
-.req-resp {
+.req-resp,
+.req-estado-servicio,
+.req-prioridad,
+.req-ingreso {
+  white-space: nowrap;
+}
+
+/* D2: badge de prioridad (Alta/Media/Baja) */
+.req-prioridad-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 

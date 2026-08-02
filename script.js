@@ -140,6 +140,8 @@ function cacheDom() {
   dom.itemExpiry = $('#itemExpiry');
   dom.itemCost = $('#itemCost');
   dom.itemProvider = $('#itemProvider');
+  dom.itemPrioridad = $('#itemPrioridad');
+  dom.itemIngreso = $('#itemIngreso');
   dom.itemNotes = $('#itemNotes');
   dom.alertEmail = $('#alertEmail');
   dom.alertWhatsApp = $('#alertWhatsApp');
@@ -1166,6 +1168,9 @@ function parseReqNotes(item) {
     // El estado servicio también pasa por la normalización por acentos
     // para que 'En tramite' no aparezca duplicado como 'En trámite'
     estadoServicio: normalizeReqEstado(get('Estado servicio')),
+    // D1-D2: prioridad y fecha de ingreso (editables desde el modal)
+    prioridad: normalizePrioridad(get('Prioridad')),
+    ingreso: get('Fecha de ingreso'),
     empresa: get('Empresa'),
     adjunto: extractAdjuntoUrl(notes),
     hr: extractHrCodes(notes),
@@ -1206,7 +1211,7 @@ function getFilteredReqItems() {
   if (q) {
     result = result.filter(item => {
       const p = parseReqNotes(item);
-      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.tipo + ' ' + p.empresa + ' ' + (item.provider || ''));
+      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.prioridad + ' ' + p.tipo + ' ' + p.empresa + ' ' + (item.provider || ''));
       return haystack.toLowerCase().includes(q);
     });
   }
@@ -1243,6 +1248,9 @@ function getFilteredReqItems() {
     areaUsuaria: (p) => p.areaUsuaria || '',
     responsable: (p) => p.responsable || '',
     estado:      (p) => p.estado || '',
+    estadoServicio: (p) => p.estadoServicio || '',
+    prioridad:   (p) => { const o = { Alta: 0, Media: 1, Baja: 2 }; return o[p.prioridad] ?? 3; },
+    ingreso:     (p) => p.ingreso || '',
     empresa:     (p, it) => ((it.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()),
     cost:        (p, it) => (it.cost != null && it.cost >= 0 ? it.cost : Number.MAX_SAFE_INTEGER),
   };
@@ -1503,11 +1511,14 @@ function renderRequirements() {
       <tr class="req-row">
         <td class="req-code">${p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge" title="Este requerimiento no tiene código REQ">Sin REQ</span>'}</td>
         <td class="req-name">${escapeHtml(item.name)}${notes ? `<span class="req-notes-trigger" data-notes-id="${escapeHtml(item.id)}" title="Ver notas completas">&#128221;</span>` : ''}</td>
+        <td class="req-ingreso">${escapeHtml(p.ingreso || '—')}</td>
         <td class="req-tipo">${escapeHtml(p.tipo || '—')}</td>
         <td class="req-area">${p.area ? escapeHtml(p.area) : '<span class="req-missing-badge" title="Este requerimiento no tiene área asignada">Sin área</span>'}</td>
         <td class="req-area-usuaria">${escapeHtml(p.areaUsuaria || '—')}</td>
         <td class="req-resp">${escapeHtml(p.responsable || '—')}</td>
         <td>${buildReqEstadoSelect(item, color)}</td>
+        <td class="req-estado-servicio">${escapeHtml(p.estadoServicio || '—')}</td>
+        <td class="req-prioridad">${p.prioridad ? `<span class="req-prioridad-badge" style="background:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}18;color:${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'};border:1px solid ${REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8'}44;">${escapeHtml(p.prioridad)}</span>` : '<span class="req-no-hr">—</span>'}</td>
         <td class="req-provider">${escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim() || '—'))}</td>
         <td class="req-cost">${hasCost ? escapeHtml(formatCurrency(item.cost)) : '—'}</td>
         <td class="req-hr">${(p.hr && p.hr.length) ? `<div class="req-hr-cell">${p.hr.slice(0, 3).map(c => `<button type="button" class="req-hr-badge" title="Abrir ${escapeHtml(c)} en el sistema de trámite" onclick="openTramite('${escapeHtml(c)}')">${escapeHtml(c)}</button>`).join('')}${p.hr.length > 3 ? `<span class="req-hr-more">+${p.hr.length - 3}</span>` : ''}</div>` : '<span class="req-no-hr">—</span>'}</td>
@@ -1531,7 +1542,7 @@ function renderRequirements() {
       g.items.push(item);
     }
     rowsHtml = groups.map(g =>
-      `<tr class="req-group-row"><td colspan="12">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
+      `<tr class="req-group-row"><td colspan="15">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
       g.items.map(buildRow).join('')
     ).join('');
   } else {
@@ -1599,6 +1610,41 @@ function setEstadoInNotes(notes, estado) {
   return notes + '\n' + line;
 }
 
+// ---- D1-D2: Prioridad y Fecha de ingreso ----
+const REQ_PRIORIDAD_HEX = { Alta: '#ef4444', Media: '#f59e0b', Baja: '#22c55e' };
+// Normaliza la fecha de ingreso a ISO (YYYY-MM-DD) desde formatos comunes
+function toIsoDate(str) {
+  if (!str) return '';
+  const t = String(str).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  const m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4})$/);
+  if (m) return `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  return '';
+}
+function normalizePrioridad(v) {
+  if (!v) return '';
+  const t = String(v).trim();
+  const k = t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (k === 'alta' || k === 'alto' || k === 'urgente' || k === 'critica') return 'Alta';
+  if (k === 'media' || k === 'medio' || k === 'normal') return 'Media';
+  if (k === 'baja' || k === 'bajo') return 'Baja';
+  return t;
+}
+// Inserta o actualiza una línea `Label: valor` en las notas (borra la línea si el valor es vacío)
+function setNoteField(notes, label, value) {
+  let out = notes || '';
+  const esc = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const re = new RegExp('(^|\n)' + esc + ': [^\n]*');
+  if (re.test(out)) {
+    out = value
+      ? out.replace(re, (m, p) => p + `${label}: ${value}`)
+      : out.replace(re, (m, p) => (p === '\n' ? '\n' : ''));
+  } else if (value) {
+    out = out ? out + '\n' + `${label}: ${value}` : `${label}: ${value}`;
+  }
+  return out.replace(/\n{2,}/g, '\n').replace(/^\n/, '').trim();
+}
+
 async function quickSetEstado(selectEl) {
   const id = selectEl.dataset.id;
   const estado = selectEl.value;
@@ -1648,12 +1694,12 @@ function csvEscape(v) {
 }
 
 function buildReqCsv(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Notas completas'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
-      csvEscape(p.req), csvEscape(item.name), csvEscape(p.tipo), csvEscape(p.area), csvEscape(p.areaUsuaria), csvEscape(p.responsable), csvEscape(p.estado), csvEscape(p.estadoServicio),
-      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto),
+      csvEscape(p.req), csvEscape(item.name), csvEscape(p.tipo), csvEscape(p.area), csvEscape(p.areaUsuaria), csvEscape(p.responsable), csvEscape(p.estado), csvEscape(p.estadoServicio), csvEscape(p.prioridad),
+      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto), csvEscape(p.ingreso),
       csvEscape(item.notes || '')
     ].join(',');
   });
@@ -1723,6 +1769,7 @@ function exportReqPdf() {
   const rowsHtml = data.map(item => {
     const p = parseReqNotes(item);
     const color = REQ_ESTADO_HEX[p.estado] || '#6366f1';
+    const prioColor = REQ_PRIORIDAD_HEX[p.prioridad] || '#94a3b8';
     return `
       <tr>
         <td class="code">${escapeHtml(p.req)}</td>
@@ -1733,13 +1780,15 @@ function exportReqPdf() {
         <td>${escapeHtml(p.responsable || '—')}</td>
         <td><span class="badge" style="background:${color}22;color:${color};border:1px solid ${color}55;">${escapeHtml(p.estado || '—')}</span></td>
         <td>${escapeHtml(p.estadoServicio || '—')}</td>
+        <td><span class="badge" style="background:${prioColor}22;color:${prioColor};border:1px solid ${prioColor}55;">${escapeHtml(p.prioridad || '—')}</span></td>
         <td class="cost">${item.cost != null ? escapeHtml(formatCurrency(item.cost)) : ''}</td>
         <td>${escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()) || '—')}</td>
         <td class="link">${p.adjunto ? escapeHtml(getHostname(p.adjunto)) : ''}</td>
+        <td>${escapeHtml(p.ingreso || '—')}</td>
         <td class="notes">${escapeHtml(item.notes || '')}</td>
       </tr>`;
   }).join('');
-  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  td.notes { font-size: 10px; color: #64748b; white-space: pre-wrap; min-width: 140px; word-break: break-word; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } td.notes { min-width: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th>Estado servicio</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th><th>Notas completas</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
+  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  td.notes { font-size: 10px; color: #64748b; white-space: pre-wrap; min-width: 140px; word-break: break-word; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } td.notes { min-width: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th>Estado servicio</th><th>Prioridad</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th><th>Fecha de ingreso</th><th>Notas completas</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
   win.document.close();
   win.focus();
   showToast(`Generando PDF de ${data.length} requerimientos...`, 'info');
@@ -1747,14 +1796,14 @@ function exportReqPdf() {
 
 // Construye los bytes del .xlsx a partir de un conjunto de ítems (generador local sin dependencias)
 function buildReqXlsxBytes(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Notas completas'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
-      p.req, item.name, p.tipo, p.area, p.areaUsuaria, p.responsable, p.estado, p.estadoServicio,
+      p.req, item.name, p.tipo, p.area, p.areaUsuaria, p.responsable, p.estado, p.estadoServicio, p.prioridad,
       item.cost != null && item.cost !== '' ? item.cost : '',
       (item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim(),
-      p.adjunto,
+      p.adjunto, p.ingreso,
       item.notes || ''
     ];
   });
@@ -2427,6 +2476,9 @@ function openModal(title, itemData) {
     dom.itemExpiry.value = itemData.expiryDate || '';
     dom.itemCost.value = itemData.cost ?? '';
     dom.itemProvider.value = itemData.provider || '';
+    const pDraft = parseReqNotes(itemData);
+    dom.itemPrioridad.value = pDraft.prioridad || '';
+    dom.itemIngreso.value = toIsoDate(pDraft.ingreso);
     dom.itemNotes.value = itemData.notes || '';
     dom.alertEmail.checked = itemData.alertEmail || false;
     dom.alertWhatsApp.checked = itemData.alertWhatsApp || false;
@@ -2534,11 +2586,15 @@ async function handleFormSubmit(e) {
   const expiryDate = dom.itemExpiry.value;
   if (!name) { showToast('El nombre es obligatorio', 'error'); dom.itemName.focus(); return; }
   if (!category) { showToast('Selecciona una categoría', 'error'); dom.itemCategory.focus(); return; }
+  // D1-D2: la prioridad y la fecha de ingreso se guardan como líneas en las notas
+  let notes = dom.itemNotes.value.trim() || '';
+  notes = setNoteField(notes, 'Prioridad', dom.itemPrioridad.value);
+  notes = setNoteField(notes, 'Fecha de ingreso', dom.itemIngreso.value);
   const itemData = {
     name, category, expiryDate,
     cost: dom.itemCost.value ? parseFloat(dom.itemCost.value) : null,
     provider: dom.itemProvider.value.trim() || '',
-    notes: dom.itemNotes.value.trim() || '',
+    notes,
     alertEmail: dom.alertEmail.checked,
     alertWhatsApp: dom.alertWhatsApp.checked,
     alertTelegram: dom.alertTelegram.checked,

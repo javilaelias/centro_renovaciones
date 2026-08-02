@@ -5,6 +5,7 @@
 > ✅ **A1–A4 implementados el 2026-08-02** (columna Área usuaria, enlace Sharepoint clicable, estados por defecto ampliados con los 9 reales faltantes y columna Empresa/Proveedor).
 > ✅ **B1–B5 implementados el 2026-08-02** (filtro por responsable, filtro por estado servicio, indicador de items sin REQ/Área, tooltip de notas completas y ordenamiento de columnas).
 > ✅ **C1–C4 implementados el 2026-08-02** (paginación, agrupación por área, contador por área usuaria y exportación con notas completas).
+> ✅ **D1–D2 implementados el 2026-08-02** (columnas Ingreso y Prioridad en la tabla, editables desde el modal, incluidas en las exportaciones).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -79,7 +80,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 
 | Punto de la plantilla | Qué evalúa | Cobertura actual |
 |---|---|---|
-| 1.1 | Columnas (REQ, Requerimiento, Tipo, Área, Responsable, Estado, Costo) | ✅ Cubierto y ampliado: + Área usuaria, Estado servicio, Empresa/Proveedor, Hoja de ruta, Adjunto, Notas completas (13 columnas) |
+| 1.1 | Columnas (REQ, Requerimiento, Tipo, Área, Responsable, Estado, Costo) | ✅ Cubierto y ampliado: + Área usuaria, Ingreso, Estado servicio, Prioridad, Empresa/Proveedor, Hoja de ruta, Adjunto, Notas completas (15 columnas) |
 | 1.2 | ¿Falta alguna columna? (fecha de ingreso, prioridad, enlace a documento) | 🟡 Enlace a documento = columna Adjunto (A2). **Fecha de ingreso y prioridad** no existen en los datos → candidatos D1/D2 |
 | 1.3 | Datos de Tipo/Área/Responsable/Estado se leen bien de las notas | ✅ parseo validado contra los 70 pendientes reales |
 | 1.4 | Requerimientos sin código REQ se identifican | ✅ Badge "Sin REQ" + chip "Datos incompletos" (B3) |
@@ -116,8 +117,8 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 
 | # | Candidato | Origen en la plantilla |
 |---|---|---|
-| D1 | Columna **Fecha de ingreso** del requerimiento | 1.2 |
-| D2 | Campo/columna de **Prioridad** (alta/media/baja) | 1.2, 3.6 |
+| D1 | Columna **Fecha de ingreso** del requerimiento | 1.2 | ✅ Implementado 2026-08-02 |
+| D2 | Campo/columna de **Prioridad** (alta/media/baja) | 1.2, 3.6 | ✅ Implementado 2026-08-02 |
 | D3 | Filtro por **Tipo** | 2.5 |
 | D4 | Filtro por **rango de costo** y por **fecha de creación** | 2.5 |
 | D5 | Acción **duplicar requerimiento** | 3.6 |
