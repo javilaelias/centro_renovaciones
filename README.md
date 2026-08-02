@@ -1,4 +1,4 @@
-# 🔄 Centro de Renovaciones
+# 🔄 RenovaMEF
 
 Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, hosting, licencias, seguros, colegiaturas, suscripciones y garantías**. Nunca más pierdas una renovación.
 
@@ -14,7 +14,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 - **Vista lista y calendario** con filtros por categoría, urgencia, fecha y búsqueda.
 - **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
 - **Envío manual** de recordatorios por WhatsApp, Telegram, Email, Push y exportación JSON/CSV/PDF.
-- **Importar/exportar** datos, datos de ejemplo, temas claro/oscuro y colores de acento.
+- **Importar/exportar** datos, temas claro/oscuro y colores de acento.
 - **Cambio de contraseña** desde la interfaz y **logout** con un clic.
 
 ## 🧱 Stack
@@ -54,7 +54,7 @@ centro_renovaciones/
         ├── index.js        # Servidor Express (sirve API + frontend)
         ├── auth.js         # JWT + middleware requireAuth
         ├── authRoutes.js   # Login, verify, cambio de contraseña
-        ├── routes.js       # CRUD de items, settings, seed, import
+        ├── routes.js       # CRUD de items, settings, import
         ├── db.js           # Base de datos SQLite (sql.js)
         ├── notifications.js# Orquestación de alertas (email + SMS + Telegram + Push)
         ├── sms.js          # Alertas por SMS (Twilio)
@@ -170,7 +170,7 @@ Cubre, entre otros:
 
 - **Auth**: login `admin/admin`, rechazo de contraseña incorrecta, rechazo sin token, token **expirado** / **secreto incorrecto** / **malformado** → `401`; verificación de token (`/api/auth/verify`); cambio de contraseña (éxito, contraseña actual incorrecta y nueva demasiado corta).
 - **Errores del servidor**: `500` genérico ante un **JSON malformado** en el body (handler global de errores).
-- **Items**: CRUD completo, validaciones (`400`), datos demo (seed), borrado total.
+- **Items**: CRUD completo, validaciones (`400`), importación y borrado total.
 - **Importación**: solo items válidos, todos inválidos (`400`) y **mixtos** (se importan únicamente los válidos).
 - **Exportación**: contrato de datos de `GET /api/items` (los campos que consumen los export JSON/CSV/PDF del frontend).
 - **Settings**: enmascaramiento de secretos (sin fuga de `vapid_private_key`), guardado de configuración, clave VAPID.

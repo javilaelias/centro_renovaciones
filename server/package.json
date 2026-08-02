@@ -1,7 +1,7 @@
 {
-  "name": "centro-renovaciones-server",
+  "name": "renovamef-server",
   "version": "1.0.0",
-  "description": "Backend API para Centro de Renovaciones",
+  "description": "Backend API para RenovaMEF",
   "main": "src/index.js",
   "scripts": {
     "start": "node src/index.js",

@@ -25,13 +25,48 @@ router.post('/login', (req, res) => {
     return res.status(401).json({ success: false, error: 'Usuario o contraseña incorrectos' });
   }
 
-  const token = generateToken(username);
-  res.json({ success: true, data: { token, username } });
+  const token = generateToken(username, user.role);
+  res.json({ success: true, data: { token, username, role: user.role } });
+});
+
+// POST /api/auth/register - Register a new user with a Gmail account
+router.post('/register', (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, error: 'Correo y contraseña requeridos' });
+  }
+
+  // Normalizar: minúsculas y sin espacios
+  const username = String(email).trim().toLowerCase();
+
+  // Solo cuentas Gmail (el cliente lo valida también, aquí por seguridad)
+  if (!/^[a-z0-9._%+\-]+@gmail\.com$/i.test(username)) {
+    return res.status(400).json({ success: false, error: 'Solo se permiten cuentas Gmail (@gmail.com)' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ success: false, error: 'La contraseña debe tener al menos 6 caracteres' });
+  }
+
+  const existing = db.getUserByUsername(username);
+  if (existing) {
+    return res.status(409).json({ success: false, error: 'Ese correo ya está registrado. Inicia sesión.' });
+  }
+
+  const hashed = bcrypt.hashSync(password, SALT_ROUNDS);
+  db.createUser(username, hashed, 'analyst');
+
+  const token = generateToken(username, 'analyst');
+  res.status(201).json({ success: true, data: { token, username, role: 'analyst' } });
 });
 
 // GET /api/auth/verify - Verify current token is valid
 router.get('/verify', requireAuth, (req, res) => {
-  res.json({ success: true, data: { username: req.user.username } });
+  // Rol vigente desde la BD (no solo del claim del token)
+  const user = db.getUserByUsername(req.user.username);
+  const role = (user && user.role) || req.user.role || 'analyst';
+  res.json({ success: true, data: { username: req.user.username, role } });
 });
 
 // PUT /api/auth/password - Change password (requires auth + old password)

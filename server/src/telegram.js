@@ -56,7 +56,7 @@ async function sendTestTelegram(settings) {
   const result = await sendTelegram(
     settings.telegram_bot_token,
     settings.telegram_chat_id,
-    `✅ *Prueba Telegram — Centro de Renovaciones*\n\nSi recibes este mensaje, la configuración de Telegram es correcta y comenzarás a recibir alertas automáticas de renovaciones.\n\nEnviado: ${new Date().toLocaleString('es-ES')}`
+    `✅ *Prueba Telegram — RenovaMEF*\n\nSi recibes este mensaje, la configuración de Telegram es correcta y comenzarás a recibir alertas automáticas de renovaciones.\n\nEnviado: ${new Date().toLocaleString('es-ES')}`
   );
   return result;
 }
@@ -95,7 +95,7 @@ function buildTelegramContent(items) {
     subscription: '💰', warranty: '🔐'
   };
 
-  let msg = '🔔 *Centro de Renovaciones*\n';
+  let msg = '🔔 *RenovaMEF*\n';
   msg += 'Próximos vencimientos:\n\n';
 
   Object.entries(grouped).forEach(([threshold, thresholdItems]) => {
@@ -115,7 +115,7 @@ function buildTelegramContent(items) {
     msg += '\n';
   });
 
-  msg += '---\nCentro de Renovaciones';
+  msg += '---\nRenovaMEF';
   return msg;
 }
 

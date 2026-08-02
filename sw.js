@@ -1,5 +1,5 @@
 /* ==========================================
-   CENTRO DE RENOVACIONES - Service Worker
+   RENOVAMEF - Service Worker
    Maneja notificaciones push del navegador.
    ========================================== */
 
@@ -19,7 +19,7 @@ self.addEventListener('activate', (event) => {
 
 // Mostrar notificación cuando llega un push
 self.addEventListener('push', (event) => {
-  let data = { title: 'Centro de Renovaciones', body: 'Tienes renovaciones próximas.', url: '/' };
+  let data = { title: 'RenovaMEF', body: 'Tienes renovaciones próximas.', url: '/' };
 
   try {
     if (event.data) {

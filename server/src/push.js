@@ -120,7 +120,7 @@ async function sendPushToAll(subscriptions, payload, onGone) {
  */
 async function sendTestPush(subscription) {
   return sendPushToSubscription(subscription, {
-    title: '✅ Prueba Push — Centro de Renovaciones',
+    title: '✅ Prueba Push — RenovaMEF',
     body: 'Si recibes esta notificación, las notificaciones push están funcionando correctamente.',
     url: '/',
   });

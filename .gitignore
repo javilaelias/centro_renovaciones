@@ -30,3 +30,19 @@ npm-debug.log*
 
 # Railway
 .railway/
+
+# Despliegue (credenciales y paquetes temporales)
+.deploy.env
+centro_deploy.tar.gz
+
+# Artefactos temporales y de diagnóstico (no se versionan)
+__pycache__/
+*.pyc
+bat_*.txt
+_final*.txt
+_final_check.txt
+validate_histcsv.txt
+server/srv_*.txt
+server/srv_up*.txt
+test_requerimientos.xlsx
+excel_dump.json

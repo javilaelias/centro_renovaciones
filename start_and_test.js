@@ -15,7 +15,7 @@ const request = createRequest(3001);
 
 async function runTests() {
   log('========================================');
-  log('CENTRO DE RENOVACIONES - TEST SUITE');
+  log('RENOVAMEF - TEST SUITE');
   log('Date: ' + new Date().toISOString());
   log('========================================\n');
 
@@ -56,7 +56,7 @@ async function runTests() {
     log('\n7. FRONTEND');
     const front = await request('GET', '/');
     log(`   Status: ${front.status}`);
-    if (front.raw && front.raw.includes('Centro de Renovaciones')) {
+    if (front.raw && front.raw.includes('RenovaMEF')) {
       log(`   ✓ Frontend serving HTML`);
     }
 

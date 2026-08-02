@@ -4,6 +4,9 @@ server/node_modules/
 
 # Base de datos local (contiene credenciales) — nunca va a la imagen
 server/data/
+# Volumen de datos del servidor (dentro de $APP_DIR) — tampoco va a la imagen
+data/
+centro_deploy.tar.gz
 
 # Git y entornos
 .git/

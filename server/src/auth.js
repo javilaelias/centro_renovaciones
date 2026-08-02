@@ -11,9 +11,11 @@ const JWT_EXPIRES_IN = '30d';
 
 /**
  * Generate a JWT token for a user
+ * @param {string} username
+ * @param {string} [role] - 'admin' o 'analyst'
  */
-function generateToken(username) {
-  return jwt.sign({ username }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
+function generateToken(username, role) {
+  return jwt.sign({ username, role: role || 'analyst' }, JWT_SECRET, { expiresIn: JWT_EXPIRES_IN });
 }
 
 /**
@@ -43,4 +45,25 @@ function requireAuth(req, res, next) {
   }
 }
 
-module.exports = { generateToken, verifyToken, requireAuth };
+/**
+ * Express middleware: requiere rol 'admin'. Se consulta la base de datos para
+ * obtener el rol vigente (no depende solo del claim del token, que puede
+ * estar desactualizado o faltar en tokens antiguos).
+ */
+function requireAdmin(req, res, next) {
+  if (!req.user || !req.user.username) {
+    return res.status(401).json({ success: false, error: 'Se requiere autenticación' });
+  }
+
+  const db = require('./db');
+  const user = db.getUserByUsername(req.user.username);
+  // Fail-closed: si el usuario no existe o no es admin, se niega (403)
+  if (!user || user.role !== 'admin') {
+    return res.status(403).json({ success: false, error: 'Acción permitida solo para administradores' });
+  }
+
+  req.userRole = user.role;
+  next();
+}
+
+module.exports = { generateToken, verifyToken, requireAuth, requireAdmin };

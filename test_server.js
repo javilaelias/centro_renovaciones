@@ -1,5 +1,5 @@
 /* ==========================================
-   CENTRO DE RENOVACIONES - Suite de pruebas
+   RENOVAMEF - Suite de pruebas
    Se ejecuta con:  cd server && npm test
    (o directamente:  node test_server.js)
 
@@ -28,7 +28,7 @@ require(path.join(SERVER_DIR, 'node_modules', 'dotenv')).config({ path: path.joi
 
 const TEST_PORT = Number(process.env.TEST_PORT || 3210);
 const TEST_DB = path.join(os.tmpdir(), `centro-test-${Date.now()}.db`);
-const TEST_SECRET = 'test-secret-centro-renovaciones';
+const TEST_SECRET = 'test-secret-renovamef';
 
 let serverProcess = null;
 let authToken = null;
@@ -264,11 +264,56 @@ test('Crear item sin nombre devuelve 400', async () => {
   assert.equal(r.status, 400);
 });
 
-test('Seed carga datos demo', async () => {
-  const r = await request('POST', '/api/items/seed', null, authToken);
+test('POST /api/items sin fecha crea un item pendiente (201)', async () => {
+  // Los items sin fecha de vencimiento se permiten (estado "Pendiente").
+  const r = await request('POST', '/api/items', {
+    name: 'Item Pendiente',
+    category: 'subscription',
+    cost: 10,
+  }, authToken);
+  assert.equal(r.status, 201, 'Debe crearse sin fecha');
+  assert.equal(r.data.success, true);
+  assert.equal(r.data.data.expiryDate, '', 'expiryDate debe quedar vacío');
+
+  // Limpiar
+  await request('DELETE', `/api/items/${r.data.data.id}`, null, authToken);
+});
+
+test('POST /api/items/import acepta items sin fecha (pendiente)', async () => {
+  const r = await request('POST', '/api/items/import', {
+    items: [
+      { name: 'Importado Pendiente', category: 'warranty' },
+    ],
+  }, authToken);
   assert.equal(r.status, 200);
   assert.equal(r.data.success, true);
-  assert.ok(r.data.data.length >= 10, 'Debe cargar al menos 10 items de ejemplo');
+  const names = r.data.data.map((i) => i.name);
+  assert.ok(names.includes('Importado Pendiente'), 'Debe importarse el item sin fecha');
+  const item = r.data.data.find((i) => i.name === 'Importado Pendiente');
+  assert.equal(item.expiryDate, '', 'El item sin fecha debe quedar con expiryDate vacío');
+
+  // Limpiar
+  await request('DELETE', `/api/items/${item.id}`, null, authToken);
+});
+
+test('PUT /api/items permite dejar la fecha vacía (Pendiente)', async () => {
+  const created = await request('POST', '/api/items', {
+    name: 'Item con fecha',
+    category: 'license',
+    expiryDate: '2099-12-31',
+  }, authToken);
+  assert.equal(created.status, 201);
+  const id = created.data.data.id;
+
+  const updated = await request('PUT', `/api/items/${id}`, {
+    name: 'Item con fecha',
+    category: 'license',
+    expiryDate: '',
+  }, authToken);
+  assert.equal(updated.status, 200);
+  assert.equal(updated.data.data.expiryDate, '', 'La fecha debe poder limpiarse (pasar a Pendiente)');
+
+  await request('DELETE', `/api/items/${id}`, null, authToken);
 });
 
 test('POST /api/items/import importa items válidos', async () => {
@@ -280,7 +325,7 @@ test('POST /api/items/import importa items válidos', async () => {
   }, authToken);
   assert.equal(r.status, 200);
   assert.equal(r.data.success, true);
-  // La respuesta incluye todos los items de la BD (seed + importados), no solo los nuevos
+  // La respuesta incluye todos los items de la BD (incluidos los importados), no solo los nuevos
   const names = r.data.data.map((i) => i.name);
   assert.ok(names.includes('Dominio Importado'), 'Debe importarse el dominio');
   assert.ok(names.includes('SSL Importado'), 'Debe importarse el SSL');
@@ -376,7 +421,7 @@ test('Exportación: el API entrega todos los campos que consumen los export JSON
 });
 
 test('DELETE /api/items borra todos los items', async () => {
-  // Verificar que hay items (de seed + import)
+  // Verificar que hay items (de los tests de import)
   const before = await request('GET', '/api/items', null, authToken);
   assert.ok(before.data.data.length > 0, 'Debe haber items antes del borrado');
 
@@ -492,7 +537,7 @@ test('test-push sin suscripción devuelve error (400)', async () => {
 test('El frontend se sirve en /', async () => {
   const r = await request('GET', '/');
   assert.equal(r.status, 200);
-  assert.ok(r.raw && r.raw.includes('Centro de Renovaciones'), 'El HTML debe contener el título');
+  assert.ok(r.raw && r.raw.includes('RenovaMEF'), 'El HTML debe contener el título');
 });
 
 test('El service worker sw.js se sirve', async () => {

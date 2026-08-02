@@ -81,7 +81,7 @@ async function sendTestSms(settings) {
 
   const result = await sendSms(
     settings.twilio_to_number,
-    `✅ Prueba SMS — Centro de Renovaciones\n\nSi recibes este mensaje, la configuración de SMS es correcta.\n\nEnviado: ${new Date().toLocaleString('es-ES')}`,
+    `✅ Prueba SMS — RenovaMEF\n\nSi recibes este mensaje, la configuración de SMS es correcta.\n\nEnviado: ${new Date().toLocaleString('es-ES')}`,
     settings.twilio_from_number
   );
 
@@ -114,7 +114,7 @@ function buildSmsContent(items) {
     subscription: '💰', warranty: '🔐'
   };
 
-  let msg = '🔔 *Centro de Renovaciones*\n';
+  let msg = '🔔 *RenovaMEF*\n';
   msg += 'Próximos vencimientos:\n\n';
 
   Object.entries(grouped).forEach(([threshold, thresholdItems]) => {
@@ -134,7 +134,7 @@ function buildSmsContent(items) {
     msg += '\n';
   });
 
-  msg += '---\nCentro de Renovaciones';
+  msg += '---\nRenovaMEF';
   return msg;
 }
 

@@ -80,7 +80,7 @@ async function start() {
   startScheduler();
 
   app.listen(PORT, () => {
-    console.log(`\u{1F680} Centro de Renovaciones API corriendo en http://localhost:${PORT}`);
+    console.log(`\u{1F680} RenovaMEF API corriendo en http://localhost:${PORT}`);
     console.log(`\u{1F310} Frontend servido en http://localhost:${PORT}`);
     console.log(`\u{1F512} Usuario: admin, Contraseña: admin`);
   });

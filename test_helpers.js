@@ -1,5 +1,5 @@
 /* ==========================================
-   CENTRO DE RENOVACIONES - Helpers de prueba
+   RENOVAMEF - Helpers de prueba
    Módulo compartido entre test_server.js y start_and_test.js.
    Elimina la duplicación de request() y waitForServer().
    ========================================== */

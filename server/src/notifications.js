@@ -139,7 +139,7 @@ function buildEmailContent(items) {
             <table cellpadding="0" cellspacing="0" style="width:100%;">
               <tr>
                 <td>
-                  <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">\u{1F504} Centro de Renovaciones</h1>
+                  <h1 style="margin:0;font-size:22px;color:#fff;font-weight:700;">\u{1F504} RenovaMEF</h1>
                   <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">Resumen de renovaciones — ${today}</p>
                 </td>
                 <td style="text-align:right;">
@@ -158,7 +158,7 @@ function buildEmailContent(items) {
         </tr>
         <tr>
           <td style="padding:16px 32px;text-align:center;font-size:12px;color:#94a3b8;">
-            Este correo fue generado automáticamente por Centro de Renovaciones.
+            Este correo fue generado automáticamente por RenovaMEF.
           </td>
         </tr>
       </table>
@@ -198,9 +198,9 @@ async function checkAndNotify() {
             if (toEmail) {
               try {
                 await transport.sendMail({
-                  from: `"${settings.smtp_from_name || 'Centro de Renovaciones'}" <${settings.smtp_from_email || settings.smtp_user}>`,
+                  from: `"${settings.smtp_from_name || 'RenovaMEF'}" <${settings.smtp_from_email || settings.smtp_user}>`,
                   to: toEmail,
-                  subject: `🔔 ${alertItems.length} renovaciones próximas — Centro de Renovaciones`,
+                  subject: `🔔 ${alertItems.length} renovaciones próximas — RenovaMEF`,
                   html,
                 });
                 totalSent += alertItems.length;
@@ -344,12 +344,12 @@ async function testEmail(settings) {
 
   try {
     await testTransporter.sendMail({
-      from: `"${settings.smtp_from_name || 'Centro de Renovaciones'}" <${settings.smtp_from_email || settings.smtp_user}>`,
+      from: `"${settings.smtp_from_name || 'RenovaMEF'}" <${settings.smtp_from_email || settings.smtp_user}>`,
       to: toEmail,
-      subject: '\u2705 Prueba — Centro de Renovaciones',
+      subject: '\u2705 Prueba — RenovaMEF',
       html: `
         <h2 style="color:#10b981;">\u2705 Conexión SMTP exitosa</h2>
-        <p>Este es un correo de prueba desde <strong>Centro de Renovaciones</strong>.</p>
+        <p>Este es un correo de prueba desde <strong>RenovaMEF</strong>.</p>
         <p>Si recibes este mensaje, la configuración de email es correcta y comenzarás a recibir alertas automáticas de renovaciones.</p>
         <hr/>
         <p style="color:#94a3b8;font-size:12px;">Enviado el ${new Date().toLocaleString('es-ES')}</p>
