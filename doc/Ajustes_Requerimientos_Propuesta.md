@@ -10,6 +10,7 @@
 > ✅ **D5 implementado el 2026-08-02** (acción duplicar requerimiento desde la tabla).
 > ✅ **D6 implementado el 2026-08-02** (exportación con plantilla oficial PDF). **La serie D está completa.**
 > ✅ **Serie E implementada el 2026-08-02** (E1 responsable editable, E2 comentarios por ítem, E3 exportar TODOS, E4 fecha de creación, E5 responsive, E6 permisos por rol).
+> ✅ **Variante TODOS → Oficial añadida el 2026-08-02** (la plantilla oficial PDF también exporta todos los requerimientos ignorando filtros).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -100,7 +101,7 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 3.5 | Eliminar pide confirmación | ✅ Confirmación; además solo visible para admin |
 | 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | ✅ Historial, duplicar (D5), prioridad (D2). **Comentarios ✅ (E2) y responsable editable ✅ (E1)** |
 | 4.1–4.3 | Exportación CSV/PDF/XLSX de datos filtrados | ✅ Filtros aplicados + notas completas (C4) + Estado servicio |
-| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | ✅ **Exportar TODOS ignorando filtros (E3, CSV/PDF/XLSX)** + plantilla oficial (D6) |
+| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | ✅ **Exportar TODOS ignorando filtros (E3, CSV/PDF/XLSX)** + plantilla oficial (D6) con su propia variante **TODOS → Oficial** (exporta todos ignorando filtros; el reporte indica que se ignoraron los filtros activos) |
 | 5.1 / 5.2 | Estados personalizables desde Configuración | ✅ Editor de estados + flujo, con migración automática |
 | 5.3 | ¿Flujo secuencial obligatorio? | 🟡 Opcional configurable (desactivado por defecto) — validar con analistas (decisión 1) |
 | 6.1 | Carga rápida con ~70 filas | ✅ Paginación (C1) + orden/agrupación |
@@ -126,7 +127,7 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 | D3 | Filtro por **Tipo** | 2.5 | ✅ Implementado 2026-08-02 |
 | D4 | Filtro por **rango de costo** (fecha de creación: no aplica, no existe en los datos) | 2.5 | ✅ Implementado 2026-08-02 |
 | D5 | Acción **duplicar requerimiento** | 3.6 | ✅ Implementado 2026-08-02 |
-| D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 | ✅ Implementado 2026-08-02 |
+| D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 | ✅ Implementado 2026-08-02 (+ **variante TODOS → Oficial** 2026-08-02) |
 | E1 | Campo **Responsable** editable (datalist con los 12 reales) | 3.6 | ✅ Implementado 2026-08-02 |
 | E2 | **Comentarios por requerimiento** (panel + historial en notas) | 3.6 | ✅ Implementado 2026-08-02 |
 | E3 | **Exportar TODOS** los pendientes ignorando filtros (CSV/PDF/XLSX) | 4.4 | ✅ Implementado 2026-08-02 |
