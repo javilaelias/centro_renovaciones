@@ -5,7 +5,8 @@
 > ✅ **A1–A4 implementados el 2026-08-02** (columna Área usuaria, enlace Sharepoint clicable, estados por defecto ampliados con los 9 reales faltantes y columna Empresa/Proveedor).
 > ✅ **B1–B5 implementados el 2026-08-02** (filtro por responsable, filtro por estado servicio, indicador de items sin REQ/Área, tooltip de notas completas y ordenamiento de columnas).
 > ✅ **C1–C4 implementados el 2026-08-02** (paginación, agrupación por área, contador por área usuaria y exportación con notas completas).
-> ⏳ **Pendiente:** consolidar las observaciones de los analistas (pegar el contenido de la plantilla `Observaciones_Analistas_Requerimientos.md` completada). Esta propuesta es la **base técnica** validada contra los datos reales.
+> ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
+> ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
 ---
 
@@ -64,12 +65,64 @@ Pero las **notas reales contienen 17+ campos**, muchos sin exponer en la vista:
 
 ## 3. Decisiones que requieren validación con los analistas
 
-1. ¿El **flujo de estados** debe ser secuencial obligatorio o libre (actual)?
+1. ¿El **flujo de estados** debe ser secuencial obligatorio o libre (actual)? *(ya es configurable en Configuración → flujo secuencial)*
 2. ¿Los analistas deben poder **editar cualquier campo** o solo estado/fecha (rol actual)?
-3. ¿Se necesita **historial/auditoría** de cambios de estado (quién y cuándo)?
-4. ¿Algún estado del flujo real (OAB, presupuestal, conformidad) debe tener **color/distinción** propia?
+3. ¿Se necesita **historial/auditoría** de cambios de estado (quién y cuándo)? *(ya existe historial de estados por ítem)*
+4. ¿Algún estado del flujo real (OAB, presupuestal, conformidad) debe tener **color/distinción** propia? *(ya tienen colores propios: purple/cyan/amber…)*
 5. ¿La **fecha de vencimiento** que se asigna a un requerimiento debe tener un formato o regla especial?
 
 ---
 
-*Pendiente: pegar el contenido de la plantilla completada para fusionar las observaciones de los analistas con esta propuesta técnica.*
+## 4. Cobertura de la plantilla de observaciones de analistas
+
+Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimientos.md` frente a la app actual. **Leyenda:** ✅ cubierto · 🟡 cubierto con matiz · ⬜ pendiente de validación con analistas.
+
+| Punto de la plantilla | Qué evalúa | Cobertura actual |
+|---|---|---|
+| 1.1 | Columnas (REQ, Requerimiento, Tipo, Área, Responsable, Estado, Costo) | ✅ Cubierto y ampliado: + Área usuaria, Estado servicio, Empresa/Proveedor, Hoja de ruta, Adjunto, Notas completas (13 columnas) |
+| 1.2 | ¿Falta alguna columna? (fecha de ingreso, prioridad, enlace a documento) | 🟡 Enlace a documento = columna Adjunto (A2). **Fecha de ingreso y prioridad** no existen en los datos → candidatos D1/D2 |
+| 1.3 | Datos de Tipo/Área/Responsable/Estado se leen bien de las notas | ✅ parseo validado contra los 70 pendientes reales |
+| 1.4 | Requerimientos sin código REQ se identifican | ✅ Badge "Sin REQ" + chip "Datos incompletos" (B3) |
+| 1.5 | Orden por código REQ esperado | ✅ Por defecto REQ asc; ordenable por cualquier columna (B5) |
+| 2.1 | Búsqueda por nombre, REQ, área, responsable, estado, tipo | ✅ Incluye además estado servicio, empresa y área usuaria; insensible a acentos |
+| 2.2 / 2.3 | Filtros por Estado y Área | ✅ Selects + chips resumen |
+| 2.4 | Chips resumen (Por estado / Por área) útiles y con conteos correctos | ✅ 5 grupos: estado, área, área usuaria, estado servicio, datos incompletos |
+| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | 🟡 Responsable ✅ (B1). **Tipo, rango de costo y fecha de creación** → candidatos D3/D4 |
+| 3.1 | Cambio rápido de Estado persiste | ✅ Select inline + historial |
+| 3.2 | Lista de estados adecuada y en orden lógico | ✅ 19 estados por defecto (A3), personalizables, flujo secuencial opcional |
+| 3.3 | Asignar fecha de vencimiento saca el ítem de pendientes | ✅ Input de fecha en la fila |
+| 3.4 | Editar (modal) completo: notas, costo, proveedor | ✅ Modal completo + tooltip de notas (B4) |
+| 3.5 | Eliminar pide confirmación | ✅ Confirmación; además solo visible para admin |
+| 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | 🟡 Historial de estados ✅. **Duplicar** → candidato D5 |
+| 4.1–4.3 | Exportación CSV/PDF/XLSX de datos filtrados | ✅ Filtros aplicados + notas completas (C4) + Estado servicio |
+| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | 🟡 Exporta lo filtrado (con "Mostrar todos" en paginación se exporta todo). Plantilla con formato oficial → candidato D6 |
+| 5.1 / 5.2 | Estados personalizables desde Configuración | ✅ Editor de estados + flujo, con migración automática |
+| 5.3 | ¿Flujo secuencial obligatorio? | 🟡 Opcional configurable (desactivado por defecto) — validar con analistas (decisión 1) |
+| 6.1 | Carga rápida con ~70 filas | ✅ Paginación (C1) + orden/agrupación |
+| 6.2 | Uso en pantallas pequeñas | 🟡 Tabla con scroll horizontal y filtros envolventes — validar |
+| 6.3 | Mensajes de éxito/error claros | ✅ Toasts en todas las acciones |
+| 6.4 | Título y contador (X de Y) comprensibles | ✅ "X de Y ítems" + contador por grupo |
+| 6.5 | ¿Paginación o agrupación? | ✅ Ambas: paginación (C1) y agrupación por área (C2) |
+| 7.1 / 7.2 | Registro con Gmail y login posterior | ✅ Registro de analistas + login |
+| 7.3 | Rol analista con permisos distintos al admin | 🟡 Analista no elimina; admin sí. Otras distinciones → decisión 2 |
+
+**Cobertura:** 31/31 puntos con al menos cobertura parcial · 24 ✅ · 7 🟡 · 0 ⬜
+
+> **Cómo se fusionará:** cuando la plantilla regrese completada, cada observación ✏️ se insertará en la fila correspondiente de esta tabla (columna "Observación del analista") y los ajustes nuevos pasarán a la sección de candidatos D.
+
+## 5. Candidatos a mejoras futuras (serie D)
+
+Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar cuando lleguen las observaciones):
+
+| # | Candidato | Origen en la plantilla |
+|---|---|---|
+| D1 | Columna **Fecha de ingreso** del requerimiento | 1.2 |
+| D2 | Campo/columna de **Prioridad** (alta/media/baja) | 1.2, 3.6 |
+| D3 | Filtro por **Tipo** | 2.5 |
+| D4 | Filtro por **rango de costo** y por **fecha de creación** | 2.5 |
+| D5 | Acción **duplicar requerimiento** | 3.6 |
+| D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 |
+
+---
+
+*Pendiente: recibir la plantilla completada de los analistas para fusionar sus observaciones (sección 4) y priorizar la serie D.*
