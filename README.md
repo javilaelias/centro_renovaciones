@@ -11,7 +11,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 ## ✨ Características
 
 - **Login seguro** con JWT (tokens de 30 días) y **registro de analistas con Gmail** (roles admin/analista).
-- **Vista Requerimientos** para gestionar pendientes: tabla de **16 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, rango de costo, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
+- **Vista Requerimientos** para gestionar pendientes: tabla de **16 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, **adjunto**, rango de costo, **rangos de fecha de ingreso/creación**, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
 - **Acciones por fila**: cambio rápido de estado, asignar fecha de vencimiento, **comentarios por requerimiento**, **duplicar requerimiento**, historial de estados y edición (solo admin).
 - **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + botón **TODOS** (exporta todos los pendientes ignorando filtros) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas), con variante **TODOS → Oficial**.
 - **Permisos por rol en requerimientos**: los analistas solo cambian estado y fecha; edición completa y eliminación son exclusivas del admin (frontend y servidor).
@@ -19,7 +19,7 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 - **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
 - **Envío manual** de recordatorios por WhatsApp, Telegram, Email, Push y exportación JSON/CSV/PDF.
 - **Importar/exportar** datos, temas claro/oscuro y colores de acento.
-- **Estados personalizados** para requerimientos (con normalización por acentos y **flujo secuencial** opcional).
+- **Estados personalizados** para requerimientos (con normalización por acentos, **flujo secuencial** opcional y **colores configurables por estado**).
 - **Cambio de contraseña** desde la interfaz y **logout** con un clic.
 
 ## 📋 Vista de Requerimientos
@@ -27,11 +27,12 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 Gestión de los requerimientos en trámite (ítems sin fecha de vencimiento), construida sobre los datos reales de los analistas:
 
 - **16 columnas**: REQ, Requerimiento, Ingreso, Creado (fecha de creación), Tipo, Área, Área usuaria, Responsable, Estado, Estado servicio, Prioridad, Empresa/Proveedor, Costo, Hoja de ruta (enlace al sistema de trámite documentario), Adjunto (enlace SharePoint) y Acciones.
-- **8 filtros**: búsqueda insensible a acentos, estado, área, área usuaria, responsable, estado servicio, tipo y rango de costo (con persistencia entre sesiones).
+- **11 filtros**: búsqueda insensible a acentos (incluye códigos de hoja de ruta y enlace adjunto), estado, área, área usuaria, responsable, estado servicio, tipo, adjunto (con/sin), rango de costo y rangos de fecha de ingreso y creación (con persistencia entre sesiones).
 - **Chips resumen** por estado, área, área usuaria, estado servicio y datos incompletos (Sin REQ / Sin área), clicables para filtrar.
 - **Paginación** (10/25/50/Todos), **agrupación por área**, **ordenamiento** por cualquier columna (▲/▼).
 - **Campos editables desde el modal**: Prioridad (Alta/Media/Baja), Fecha de ingreso, **Responsable** (con sugerencias de los datos reales) y **Fecha de creación** — todos visibles en la tabla y ordenables.
 - **Comentarios por requerimiento** (💬): panel con historial de comentarios (se guardan en las notas como líneas `Comentarios:`) y agregado rápido con Enter.
+- **Colores de estado configurables** (F3): desde **Configuración → Estados de Requerimientos** se elige el color de cada estado (8 clases); se aplican en la tabla, el desplegable rápido, los chips y la dona del panel de control.
 - **Exportaciones**: CSV, PDF, XLSX (con notas completas), botón **TODOS** (exporta todos los pendientes ignorando filtros) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas). La plantilla oficial también tiene su variante **TODOS → Oficial** (exporta todos los requerimientos ignorando filtros; el reporte indica que se ignoraron los filtros activos).
 - **Permisos por rol**: los analistas solo pueden cambiar estado y asignar fecha desde la tabla; la edición completa y la eliminación son exclusivas del administrador (protegido también en el servidor con `403`).
 
@@ -202,11 +203,12 @@ Cubre, entre otros:
 
 - **Auth**: login `admin/admin`, **registro de analistas con Gmail** (rol `analyst`), rechazo de contraseña incorrecta, rechazo sin token, token **expirado** / **secreto incorrecto** / **malformado** → `401`; verificación de token (`/api/auth/verify`); cambio de contraseña (éxito, contraseña actual incorrecta y nueva demasiado corta).
 - **Permisos por rol (E6)**: el analista puede cambiar estado (`notes`) y fecha (`expiryDate`) de un requerimiento, pero recibe `403` si intenta modificar nombre/costo/etc.; en renovaciones con fecha conserva la edición completa.
+- **Colores de estado (F3)**: `PUT /api/settings` guarda `req_estado_colors` validando las clases permitidas (las no válidas se descartan) y `GET /api/settings` las devuelve.
 - **Errores del servidor**: `500` genérico ante un **JSON malformado** en el body (handler global de errores).
 - **Items**: CRUD completo, validaciones (`400`), importación y borrado total.
 - **Importación**: solo items válidos, todos inválidos (`400`) y **mixtos** (se importan únicamente los válidos).
 - **Exportación**: contrato de datos de `GET /api/items` (los campos que consumen los export JSON/CSV/PDF del frontend).
-- **Settings**: enmascaramiento de secretos (sin fuga de `vapid_private_key`), guardado de configuración, clave VAPID.
+- **Settings**: enmascaramiento de secretos (sin fuga de `vapid_private_key`), guardado de configuración (incluye colores de estado F3), clave VAPID.
 - **Notificaciones**: `notify/check` (conteo de envíos/errores, sin canales → `0/0`, registro de `last_check_date`) y endpoints de prueba de canales (Telegram/SMS/Push) sin configurar → `400`.
 - **Push**: suscripción register/unregister.
 - **Scheduler**: interfaz del módulo (`startScheduler`/`stopScheduler`).
