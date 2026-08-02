@@ -4486,3 +4486,161 @@ body, .header, .login-page, .stat-card, .item-card, .modal,
 [data-theme="dark"] .dash-donut-legend-num {
   color: var(--primary-100);
 }
+
+/* ==========================================
+   SERIE E — COMENTARIOS (E2), EXPORTAR TODOS (E3), RESPONSIVE (E5)
+   ========================================== */
+
+/* E2: botón de comentarios en las acciones de fila */
+.item-action-btn.comment { background: #e0f2fe; color: #0284c7; }
+.item-action-btn.comment:hover { background: #bae6fd; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(2,132,199,0.15); }
+
+/* E2: panel de comentarios del requerimiento */
+.comments-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 4px 2px;
+  margin-bottom: 14px;
+}
+
+.comments-empty {
+  font-size: 0.82rem;
+  color: var(--primary-400);
+  font-style: italic;
+  text-align: center;
+  padding: 14px 0;
+}
+
+.comments-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.comments-bubble {
+  background: var(--primary-50);
+  border: 1px solid var(--primary-200);
+  border-radius: 10px 10px 10px 2px;
+  padding: 9px 12px;
+  font-size: 0.82rem;
+  color: var(--primary-700);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.comments-meta {
+  font-size: 0.68rem;
+  color: var(--primary-400);
+  padding-left: 4px;
+}
+
+.comments-add {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.comments-add-btn {
+  align-self: flex-end;
+}
+
+/* E3: menú desplegable "Exportar todos" (ignora filtros) */
+.req-export-all {
+  position: relative;
+  display: inline-flex;
+}
+
+.req-export-all-btn {
+  background: var(--accent-500);
+  color: #fff;
+  border-color: var(--accent-500);
+  font-weight: 700;
+}
+
+.req-export-all-btn:hover {
+  background: var(--accent-600);
+  color: #fff;
+  border-color: var(--accent-600);
+}
+
+.req-export-all-caret {
+  font-size: 0.6rem;
+  margin-left: 1px;
+}
+
+.req-export-all-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 30;
+  min-width: 180px;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--primary-200);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+}
+
+.req-export-all-opt {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-600);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s var(--ease);
+}
+
+.req-export-all-opt:hover {
+  background: var(--accent-50);
+  color: var(--accent-600);
+}
+
+/* E4: columna Fecha de creación (reutiliza el estilo de Ingreso) */
+.req-creacion {
+  white-space: nowrap;
+}
+
+/* E5: responsive de la barra de filtros y acciones de Requerimientos */
+@media (max-width: 768px) {
+  .req-cost-range {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .req-cost-input {
+    flex: 1;
+    width: auto;
+  }
+  .cal-export-actions {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+  .req-group-toggle {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .req-export-all-menu {
+    right: auto;
+    left: 0;
+  }
+  .comments-add-btn {
+    width: 100%;
+  }
+}

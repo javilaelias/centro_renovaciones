@@ -151,6 +151,10 @@ function cacheDom() {
   dom.itemProvider = $('#itemProvider');
   dom.itemPrioridad = $('#itemPrioridad');
   dom.itemIngreso = $('#itemIngreso');
+  dom.itemResponsable = $('#itemResponsable');
+  dom.responsableDatalist = $('#responsableDatalist');
+  dom.itemCreacion = $('#itemCreacion');
+  dom.itemComentarios = $('#itemComentarios');
   dom.itemNotes = $('#itemNotes');
   dom.alertEmail = $('#alertEmail');
   dom.alertWhatsApp = $('#alertWhatsApp');
@@ -284,6 +288,16 @@ function cacheDom() {
   dom.historyItemName = $('#historyItemName');
   dom.historyList = $('#historyList');
   dom.historyExportBtn = $('#historyExportBtn');
+  // Comentarios por requerimiento (E2)
+  dom.commentsOverlay = $('#commentsOverlay');
+  dom.commentsClose = $('#commentsClose');
+  dom.commentsItemName = $('#commentsItemName');
+  dom.commentsList = $('#commentsList');
+  dom.commentsTextarea = $('#commentsTextarea');
+  dom.commentsAddBtn = $('#commentsAddBtn');
+  // Exportar todos (E3)
+  dom.reqExportAllBtn = $('#reqExportAllBtn');
+  dom.reqExportAllMenu = $('#reqExportAllMenu');
   dom.passwordForm = $('#passwordForm');
   dom.currentPassword = $('#currentPassword');
   dom.newPassword = $('#newPassword');
@@ -1206,10 +1220,27 @@ function parseReqNotes(item) {
     // D1-D2: prioridad y fecha de ingreso (editables desde el modal)
     prioridad: normalizePrioridad(get('Prioridad')),
     ingreso: get('Fecha de ingreso'),
+    // E4-E2: fecha de creación y comentarios editables desde el modal
+    // (el responsable ya está en el campo 'responsable' de arriba)
+    creacion: get('Fecha de creación'),
+    comentarios: extractReqComments(notes),
     empresa: get('Empresa'),
     adjunto: extractAdjuntoUrl(notes),
     hr: extractHrCodes(notes),
   };
+}
+
+// E2: extrae todas las líneas "Comentarios: ..." de las notas (historial de comentarios)
+function extractReqComments(notes) {
+  if (!notes) return [];
+  const out = [];
+  const re = /(?:^|\n)Comentarios:\s*([^\n]*)/gi;
+  let m;
+  while ((m = re.exec(notes)) !== null) {
+    const t = m[1].trim();
+    if (t) out.push(t);
+  }
+  return out;
 }
 
 // Extrae la URL del adjunto (p. ej. enlace Sharepoint en "Comentarios servicio")
@@ -1246,7 +1277,7 @@ function getFilteredReqItems() {
   if (q) {
     result = result.filter(item => {
       const p = parseReqNotes(item);
-      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.prioridad + ' ' + p.tipo + ' ' + p.empresa + ' ' + (item.provider || ''));
+      const haystack = stripAccents(item.name + ' ' + p.req + ' ' + p.area + ' ' + p.areaUsuaria + ' ' + p.responsable + ' ' + p.estado + ' ' + p.estadoServicio + ' ' + p.prioridad + ' ' + p.tipo + ' ' + p.empresa + ' ' + p.creacion + ' ' + (p.comentarios || []).join(' ') + ' ' + (item.provider || ''));
       return haystack.toLowerCase().includes(q);
     });
   }
@@ -1305,6 +1336,7 @@ function getFilteredReqItems() {
     estadoServicio: (p) => p.estadoServicio || '',
     prioridad:   (p) => { const o = { Alta: 0, Media: 1, Baja: 2 }; return o[p.prioridad] ?? 3; },
     ingreso:     (p) => p.ingreso || '',
+    creacion:    (p) => p.creacion || '',
     empresa:     (p, it) => ((it.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()),
     cost:        (p, it) => (it.cost != null && it.cost >= 0 ? it.cost : Number.MAX_SAFE_INTEGER),
   };
@@ -1527,6 +1559,10 @@ function renderRequirements() {
     reqEstadoServicioFilter = estadosServicio.includes(reqEstadoServicioFilter) ? reqEstadoServicioFilter : 'all';
     dom.reqEstadoServicioFilter.value = reqEstadoServicioFilter;
   }
+  // E1: opciones del datalist de responsables del modal (sugerencias, valor libre permitido)
+  if (dom.responsableDatalist) {
+    dom.responsableDatalist.innerHTML = responsables.map(r => `<option value="${escapeHtml(r)}"></option>`).join('');
+  }
   // D3: opciones dinámicas del filtro por tipo
   const tipos = [...new Set(all.map(i => parseReqNotes(i).tipo || 'Sin asignar'))].sort((a, b) => a.localeCompare(b, 'es'));
   if (dom.reqTipoFilter) {
@@ -1577,6 +1613,7 @@ function renderRequirements() {
         <td class="req-code">${p.req ? `<span class="req-code-badge">${escapeHtml(p.req)}</span>` : '<span class="req-missing-badge" title="Este requerimiento no tiene código REQ">Sin REQ</span>'}</td>
         <td class="req-name">${escapeHtml(item.name)}${notes ? `<span class="req-notes-trigger" data-notes-id="${escapeHtml(item.id)}" title="Ver notas completas">&#128221;</span>` : ''}</td>
         <td class="req-ingreso">${escapeHtml(p.ingreso || '—')}</td>
+        <td class="req-creacion">${escapeHtml(p.creacion || '—')}</td>
         <td class="req-tipo">${escapeHtml(p.tipo || '—')}</td>
         <td class="req-area">${p.area ? escapeHtml(p.area) : '<span class="req-missing-badge" title="Este requerimiento no tiene área asignada">Sin área</span>'}</td>
         <td class="req-area-usuaria">${escapeHtml(p.areaUsuaria || '—')}</td>
@@ -1591,8 +1628,9 @@ function renderRequirements() {
         <td class="req-actions">
           <input type="date" class="req-date-input" title="Asignar fecha de vencimiento (sale de pendientes)" min="${new Date().toISOString().split('T')[0]}" onchange="quickSetDate('${item.id}', this.value)" />
           <button class="item-action-btn history" onclick="openReqHistory('${item.id}')" data-tooltip="Ver historial de estados">&#128337;&#xFE0F;</button>
+          <button class="item-action-btn comment" onclick="openReqComments('${item.id}')" data-tooltip="Ver y agregar comentarios">&#128172;</button>
           <button class="item-action-btn duplicate" onclick="duplicateItem('${item.id}')" data-tooltip="Duplicar requerimiento">&#128209;</button>
-          <button class="item-action-btn edit" onclick="openEdit('${item.id}')" data-tooltip="Editar requerimiento">&#9998;&#xFE0F;</button>
+          ${isAdmin() ? `<button class="item-action-btn edit" onclick="openEdit('${item.id}')" data-tooltip="Editar requerimiento">&#9998;&#xFE0F;</button>` : ''}
           ${isAdmin() ? `<button class="item-action-btn delete" onclick="confirmDelete('${item.id}')" data-tooltip="Eliminar requerimiento">&#128465;&#xFE0F;</button>` : ''}
         </td>
       </tr>`;
@@ -1608,7 +1646,7 @@ function renderRequirements() {
       g.items.push(item);
     }
     rowsHtml = groups.map(g =>
-      `<tr class="req-group-row"><td colspan="15">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
+      `<tr class="req-group-row"><td colspan="16">&#128193; ${escapeHtml(g.area)} <span class="req-group-count">${g.items.length}</span></td></tr>` +
       g.items.map(buildRow).join('')
     ).join('');
   } else {
@@ -1760,12 +1798,12 @@ function csvEscape(v) {
 }
 
 function buildReqCsv(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Notas completas'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Fecha de creación', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
       csvEscape(p.req), csvEscape(item.name), csvEscape(p.tipo), csvEscape(p.area), csvEscape(p.areaUsuaria), csvEscape(p.responsable), csvEscape(p.estado), csvEscape(p.estadoServicio), csvEscape(p.prioridad),
-      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto), csvEscape(p.ingreso),
+      item.cost != null ? item.cost : '', csvEscape(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim())), csvEscape(p.adjunto), csvEscape(p.ingreso), csvEscape(p.creacion),
       csvEscape(item.notes || '')
     ].join(',');
   });
@@ -1804,12 +1842,15 @@ function downloadReqCsv(csv, filename) {
   URL.revokeObjectURL(url);
 }
 
-function exportReqCsv() {
-  const data = getFilteredReqItems();
+function exportReqCsv(forceAll) {
+  const data = forceAll ? getReqItems() : getFilteredReqItems();
   if (data.length === 0) { showToast('No hay requerimientos para exportar', 'info'); return; }
   downloadReqCsv(buildReqCsv(data), `requerimientos-${new Date().toISOString().split('T')[0]}.csv`);
-  showToast('Requerimientos exportados a CSV', 'success');
+  showToast(forceAll ? `CSV generado con TODOS los requerimientos (${data.length})` : 'Requerimientos exportados a CSV', 'success');
 }
+
+// E3: exporta TODOS los requerimientos pendientes ignorando los filtros activos
+function exportReqAllCsv() { exportReqCsv(true); }
 
 // Ítems visibles en la página actual (fijados en renderRequirements,
 // así la exportación siempre coincide con lo que se ve en pantalla)
@@ -1826,8 +1867,11 @@ function exportReqPageCsv() {
   showToast(`Página ${reqPage} exportada a CSV (${data.length} ítems)`, 'success');
 }
 
-function exportReqPdf() {
-  const data = getFilteredReqItems();
+// E3: exporta TODOS los requerimientos pendientes a PDF ignorando filtros
+function exportReqAllPdf() { exportReqPdf(true); }
+
+function exportReqPdf(forceAll) {
+  const data = forceAll ? getReqItems() : getFilteredReqItems();
   if (data.length === 0) { showToast('No hay requerimientos para exportar', 'info'); return; }
   const win = window.open('', '_blank', 'width=1000,height=650');
   if (!win) { showToast('Permite ventanas emergentes para exportar PDF', 'error'); return; }
@@ -1851,10 +1895,11 @@ function exportReqPdf() {
         <td>${escapeHtml(((item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim()) || '—')}</td>
         <td class="link">${p.adjunto ? escapeHtml(getHostname(p.adjunto)) : ''}</td>
         <td>${escapeHtml(p.ingreso || '—')}</td>
+        <td>${escapeHtml(p.creacion || '—')}</td>
         <td class="notes">${escapeHtml(item.notes || '')}</td>
       </tr>`;
   }).join('');
-  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  td.notes { font-size: 10px; color: #64748b; white-space: pre-wrap; min-width: 140px; word-break: break-word; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } td.notes { min-width: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th>Estado servicio</th><th>Prioridad</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th><th>Fecha de ingreso</th><th>Notas completas</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
+  win.document.write(`<!DOCTYPE html>\n<html lang="es"><head><meta charset="UTF-8"><title>Gestión de Requerimientos</title><style>\n  * { box-sizing: border-box; margin: 0; padding: 0; }\n  body { font-family: 'Segoe UI', -apple-system, Arial, sans-serif; color: #1e293b; padding: 32px; }\n  .print-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }\n  .print-header h1 { font-size: 20px; color: #0f172a; }\n  .print-meta { font-size: 12px; color: #64748b; margin-bottom: 20px; }\n  table { width: 100%; border-collapse: collapse; margin-top: 8px; }\n  th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: 8px 10px; }\n  td { font-size: 12px; padding: 8px 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }\n  td.code { font-weight: 700; white-space: nowrap; }\n  td.name { font-weight: 600; }\n  td.cost { text-align: right; white-space: nowrap; }\n  td.link { color: #2563eb; white-space: nowrap; }\n  td.notes { font-size: 10px; color: #64748b; white-space: pre-wrap; min-width: 140px; word-break: break-word; }\n  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600; }\n  .print-footer { margin-top: 24px; font-size: 11px; color: #94a3b8; text-align: center; }\n  @media print { body { padding: 0; } td.notes { min-width: 0; } }\n</style></head><body>\n  <div class="print-header">\n    <h1>\u21BB RenovaMEF</h1>\n    <span class="badge" style="background:#eef2ff;color:#6366f1;border:1px solid #c7d2fe;">Gesti&oacute;n de Requerimientos</span>\n  </div>\n  <div class="print-meta">Reporte generado el ${today} \u2022 ${data.length} requerimientos</div>\n  <table>\n    <thead><tr><th>REQ</th><th>Requerimiento</th><th>Tipo</th><th>Área</th><th>Área usuaria</th><th>Responsable</th><th>Estado</th><th>Estado servicio</th><th>Prioridad</th><th style="text-align:right;">Costo</th><th>Empresa/Proveedor</th><th>Adjunto</th><th>Fecha de ingreso</th><th>Fecha de creación</th><th>Notas completas</th></tr></thead>\n    <tbody>${rowsHtml}</tbody>\n  </table>\n  <div class="print-footer">RenovaMEF \u2014 Generado automáticamente</div>\n  <script>window.onload = function(){ setTimeout(function(){ window.print(); }, 300); }; window.onafterprint = function(){ window.close(); };<\/script>\n</body></html>`);
   win.document.close();
   win.focus();
   showToast(`Generando PDF de ${data.length} requerimientos...`, 'info');
@@ -1968,14 +2013,14 @@ function exportReqOficialPdf() {
 
 // Construye los bytes del .xlsx a partir de un conjunto de ítems (generador local sin dependencias)
 function buildReqXlsxBytes(data) {
-  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Notas completas'];
+  const headers = ['REQ', 'Requerimiento', 'Tipo', 'Área', 'Área usuaria', 'Responsable', 'Estado', 'Estado servicio', 'Prioridad', 'Costo', 'Empresa/Proveedor', 'Adjunto', 'Fecha de ingreso', 'Fecha de creación', 'Notas completas'];
   const rows = data.map(item => {
     const p = parseReqNotes(item);
     return [
       p.req, item.name, p.tipo, p.area, p.areaUsuaria, p.responsable, p.estado, p.estadoServicio, p.prioridad,
       item.cost != null && item.cost !== '' ? item.cost : '',
       (item.provider || '').replace(/\s+/g, ' ').trim() || (p.empresa || '').replace(/\s+/g, ' ').trim(),
-      p.adjunto, p.ingreso,
+      p.adjunto, p.ingreso, p.creacion,
       item.notes || ''
     ];
   });
@@ -2005,8 +2050,8 @@ function downloadReqXlsx(bytes, filename) {
 }
 
 // Exportación masiva a Excel (.xlsx) usando el generador local sin dependencias (xlsx_export.js)
-function exportReqXlsx() {
-  const data = getFilteredReqItems();
+function exportReqXlsx(forceAll) {
+  const data = forceAll ? getReqItems() : getFilteredReqItems();
   if (data.length === 0) { showToast('No hay requerimientos para exportar', 'info'); return; }
   if (typeof CentroXlsx === 'undefined') { showToast('El generador de Excel no está disponible', 'error'); return; }
   try {
@@ -2017,6 +2062,9 @@ function exportReqXlsx() {
     showToast('Error al generar el Excel', 'error');
   }
 }
+
+// E3: exporta TODOS los requerimientos pendientes a Excel ignorando filtros
+function exportReqAllXlsx() { exportReqXlsx(true); }
 
 // Exporta a Excel únicamente los ítems visibles de la página actual
 function exportReqPageXlsx() {
@@ -2604,7 +2652,7 @@ function renderCard(item, index) {
           <span class="notif-icon ${item.alertWhatsApp ? 'active' : ''}" title="Recibir alertas por SMS" data-tooltip="${item.alertWhatsApp ? 'WhatsApp/SMS activado' : 'WhatsApp/SMS desactivado'}">&#x1F4AC;</span>
           <span class="notif-icon ${item.alertTelegram ? 'active' : ''}" title="Recibir alertas por Telegram" data-tooltip="${item.alertTelegram ? 'Telegram activado' : 'Telegram desactivado'}">&#x1F4E2;</span>\n        </div>\n      </div>\n      <div class="item-name">${escapeHtml(item.name)}</div>\n      <div class="item-days">\n        <span class="days-badge ${isExpired ? 'expired' : level}">\n          ${isExpired ? '\u{23F0}' : '\u{1F552}'}
           ${getDaysLabel(days)}\n        </span>\n        <span class="days-label">${formatDate(item.expiryDate)}</span>\n      </div>\n      <div class="item-meta">\n        ${hasCost ? `<span class="item-cost">${formatCurrency(item.cost)}</span>` : ''}
-        ${providerUrl ? `<a href="${providerUrl}" target="_blank" rel="noopener" class="item-provider" title="Ir al proveedor">${getHostname(item.provider)}</a>` : ''}\n      </div>\n      ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}\n      <div class="item-actions">\n        <button class="item-action-btn edit" data-id="${item.id}" onclick="openEdit('${item.id}')" data-tooltip="Editar renovación">\n          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\n          Editar\n        </button>\n        ${isAdmin() ? `<button class="item-action-btn delete" data-id="${item.id}" onclick="confirmDelete('${item.id}')" data-tooltip="Eliminar renovación" data-tooltip-left>\n          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>\n          Eliminar\n        </button>` : ''}\n      </div>\n    </div>`;
+        ${providerUrl ? `<a href="${providerUrl}" target="_blank" rel="noopener" class="item-provider" title="Ir al proveedor">${getHostname(item.provider)}</a>` : ''}\n      </div>\n      ${item.notes ? `<div class="item-notes">${escapeHtml(item.notes)}</div>` : ''}\n      <div class="item-actions">\n        ${(!item.expiryDate && !isAdmin()) ? '' : `<button class="item-action-btn edit" data-id="${item.id}" onclick="openEdit('${item.id}')" data-tooltip="Editar renovación">\n          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>\n          Editar\n        </button>`}\n        ${isAdmin() ? `<button class="item-action-btn delete" data-id="${item.id}" onclick="confirmDelete('${item.id}')" data-tooltip="Eliminar renovación" data-tooltip-left>\n          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>\n          Eliminar\n        </button>` : ''}\n      </div>\n    </div>`;
 }
 
 // ---- Stats with Progress Bars & Animated Numbers ----
@@ -2651,6 +2699,9 @@ function openModal(title, itemData) {
     const pDraft = parseReqNotes(itemData);
     dom.itemPrioridad.value = pDraft.prioridad || '';
     dom.itemIngreso.value = toIsoDate(pDraft.ingreso);
+    dom.itemResponsable.value = pDraft.responsable || '';
+    dom.itemCreacion.value = toIsoDate(pDraft.creacion);
+    dom.itemComentarios.value = pDraft.comentarios.length ? pDraft.comentarios[pDraft.comentarios.length - 1] : '';
     dom.itemNotes.value = itemData.notes || '';
     dom.alertEmail.checked = itemData.alertEmail || false;
     dom.alertWhatsApp.checked = itemData.alertWhatsApp || false;
@@ -2673,6 +2724,11 @@ function openNew() { editingId = null; openModal('Nueva renovación'); dom.itemN
 function openEdit(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
+  // E6: los analistas no pueden editar requerimientos completos (solo estado/fecha)
+  if (!item.expiryDate && !isAdmin()) {
+    showToast('Solo el administrador puede editar requerimientos (estado y fecha se cambian desde la tabla)', 'info');
+    return;
+  }
   editingId = id;
   openModal('Editar renovación', item);
   dom.itemName.focus();
@@ -2691,6 +2747,64 @@ function confirmDelete(id) {
 // ---- Historial de estados (auditoría) ----
 let currentReqHistory = [];
 let currentReqHistoryName = '';
+// Comentarios por requerimiento (E2): item activo del panel
+let currentReqCommentsId = null;
+let currentReqCommentsName = '';
+
+// Abre el panel de comentarios del requerimiento (lee las líneas "Comentarios:" de las notas)
+function openReqComments(id) {
+  const item = items.find(i => i.id === id);
+  if (!item || !dom.commentsOverlay) return;
+  currentReqCommentsId = id;
+  currentReqCommentsName = item.name || '';
+  dom.commentsItemName.textContent = item.name || '';
+  renderReqCommentsList();
+  dom.commentsTextarea.value = '';
+  dom.commentsOverlay.style.display = 'flex';
+  setTimeout(() => dom.commentsTextarea && dom.commentsTextarea.focus(), 60);
+}
+
+function closeReqComments() {
+  if (dom.commentsOverlay) dom.commentsOverlay.style.display = 'none';
+  currentReqCommentsId = null;
+}
+
+function renderReqCommentsList() {
+  if (!dom.commentsList) return;
+  const item = items.find(i => i.id === currentReqCommentsId);
+  if (!item) { dom.commentsList.innerHTML = '<div class="comments-empty">Requerimiento no encontrado.</div>'; return; }
+  const comments = parseReqNotes(item).comentarios;
+  if (comments.length === 0) {
+    dom.commentsList.innerHTML = '<div class="comments-empty">Sin comentarios aún. Agrega el primero.</div>';
+    return;
+  }
+  dom.commentsList.innerHTML = comments.map((c, i) => `
+    <div class="comments-item">
+      <span class="comments-bubble">${escapeHtml(c)}</span>
+      <span class="comments-meta">Comentario ${comments.length - i}${i === comments.length - 1 ? ' · último' : ''}</span>
+    </div>`).join('');
+}
+
+// E2: agrega un comentario como nueva línea "Comentarios: ..." en las notas
+async function addReqComment() {
+  const text = (dom.commentsTextarea && dom.commentsTextarea.value || '').replace(/\s+/g, ' ').trim();
+  if (!text) { showToast('Escribe un comentario primero', 'info'); dom.commentsTextarea.focus(); return; }
+  const item = items.find(i => i.id === currentReqCommentsId);
+  if (!item) { showToast('Requerimiento no encontrado', 'error'); return; }
+  const line = 'Comentarios: ' + text;
+  const notes = (item.notes || '').trim()
+    ? (item.notes + '\n' + line)
+    : line;
+  try {
+    await updateItem(currentReqCommentsId, { notes });
+    showToast('Comentario agregado', 'success');
+    dom.commentsTextarea.value = '';
+    renderReqCommentsList();
+    renderRequirements();
+  } catch (err) {
+    showToast(err.message || 'Error al guardar el comentario', 'error');
+  }
+}
 
 async function openReqHistory(id) {
   const item = items.find(i => i.id === id);
@@ -2758,10 +2872,28 @@ async function handleFormSubmit(e) {
   const expiryDate = dom.itemExpiry.value;
   if (!name) { showToast('El nombre es obligatorio', 'error'); dom.itemName.focus(); return; }
   if (!category) { showToast('Selecciona una categoría', 'error'); dom.itemCategory.focus(); return; }
-  // D1-D2: la prioridad y la fecha de ingreso se guardan como líneas en las notas
+  // D1-D2/E1-E4: prioridad, fecha de ingreso, responsable y fecha de creación
+  // se guardan como líneas en las notas
   let notes = dom.itemNotes.value.trim() || '';
   notes = setNoteField(notes, 'Prioridad', dom.itemPrioridad.value);
   notes = setNoteField(notes, 'Fecha de ingreso', dom.itemIngreso.value);
+  notes = setNoteField(notes, 'Responsable', dom.itemResponsable.value.trim());
+  notes = setNoteField(notes, 'Fecha de creación', dom.itemCreacion.value);
+  // E2: el campo Comentarios del modal agrega una nueva línea al historial
+  // solo si el texto cambió respecto al último comentario existente.
+  // Los saltos de línea se reemplazan por espacios para mantener el formato
+  // "Comentarios: <una línea>" que usa extractReqComments.
+  const nuevoComentario = (dom.itemComentarios.value || '').replace(/\s+/g, ' ').trim();
+  if (nuevoComentario) {
+    const srcItem = editingId ? items.find(i => i.id === editingId) : null;
+    const ultimoComentario = srcItem
+      ? (parseReqNotes(srcItem).comentarios.pop() || '')
+      : '';
+    if (nuevoComentario !== ultimoComentario) {
+      notes = notes ? notes + '\n' : '';
+      notes += 'Comentarios: ' + nuevoComentario;
+    }
+  }
   const itemData = {
     name, category, expiryDate,
     cost: dom.itemCost.value ? parseFloat(dom.itemCost.value) : null,
@@ -3458,6 +3590,27 @@ async function startApp() {
     reqPage = 1;
     renderRequirements();
   });
+  // E2: panel de comentarios
+  if (dom.commentsClose) dom.commentsClose.addEventListener('click', closeReqComments);
+  if (dom.commentsAddBtn) dom.commentsAddBtn.addEventListener('click', addReqComment);
+  if (dom.commentsTextarea) dom.commentsTextarea.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addReqComment(); }
+  });
+  // E3: menú desplegable "Exportar todos"
+  if (dom.reqExportAllBtn && dom.reqExportAllMenu) {
+    dom.reqExportAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = dom.reqExportAllMenu.style.display !== 'none';
+      dom.reqExportAllMenu.style.display = isOpen ? 'none' : 'flex';
+    });
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.req-export-all')) dom.reqExportAllMenu.style.display = 'none';
+    });
+    // Cierra el menú al elegir una opción
+    dom.reqExportAllMenu.querySelectorAll('.req-export-all-opt').forEach(btn => {
+      btn.addEventListener('click', () => { dom.reqExportAllMenu.style.display = 'none'; });
+    });
+  }
   // B4: tooltip de notas completas sobre la fila
   if (dom.reqTbody) {
     dom.reqTbody.addEventListener('mouseover', showReqNotesTooltip);

@@ -440,7 +440,18 @@
             Agrupar por &aacute;rea
           </button>
           <div class="cal-export-actions">
-            <button class="cal-export-btn" onclick="exportReqCsv()" title="Exportar requerimientos a CSV">
+            <div class="req-export-all">
+              <button type="button" class="cal-export-btn req-export-all-btn" id="reqExportAllBtn" title="Exportar TODOS los requerimientos (ignora los filtros activos)">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                TODOS <span class="req-export-all-caret">&#9662;</span>
+              </button>
+              <div class="req-export-all-menu" id="reqExportAllMenu" style="display:none;">
+                <button type="button" class="req-export-all-opt" onclick="exportReqAllCsv()">&#128196; Todos &rarr; CSV</button>
+                <button type="button" class="req-export-all-opt" onclick="exportReqAllPdf()">&#128220; Todos &rarr; PDF</button>
+                <button type="button" class="req-export-all-opt" onclick="exportReqAllXlsx()">&#128196; Todos &rarr; XLSX</button>
+              </div>
+            </div>
+            <button class="cal-export-btn" onclick="exportReqCsv()" title="Exportar requerimientos a CSV (filtrados)">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
               CSV
             </button>
@@ -467,6 +478,7 @@
                 <th class="req-th-sort" data-sort="req" title="Ordenar por REQ">REQ</th>
                 <th class="req-th-sort" data-sort="name" title="Ordenar por requerimiento">Requerimiento</th>
                 <th class="req-th-sort" data-sort="ingreso" title="Ordenar por fecha de ingreso">Ingreso</th>
+                <th class="req-th-sort" data-sort="creacion" title="Ordenar por fecha de creaci&oacute;n">Creado</th>
                 <th class="req-th-sort" data-sort="tipo" title="Ordenar por tipo">Tipo</th>
                 <th class="req-th-sort" data-sort="area" title="Ordenar por &aacute;rea">&Aacute;rea</th>
                 <th class="req-th-sort" data-sort="areaUsuaria" title="Ordenar por &aacute;rea usuaria">&Aacute;rea usuaria</th>
@@ -560,9 +572,26 @@
           </div>
         </div>
 
+        <div class="form-row">
+          <div class="form-group">
+            <label for="itemResponsable" class="form-label">Responsable (E1)</label>
+            <input type="text" id="itemResponsable" class="form-input" list="responsableDatalist" placeholder="Elige o escribe el responsable..." autocomplete="off" />
+            <datalist id="responsableDatalist"></datalist>
+          </div>
+          <div class="form-group">
+            <label for="itemCreacion" class="form-label">Fecha de creaci&oacute;n (E4)</label>
+            <input type="date" id="itemCreacion" class="form-input" />
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="itemNotes" class="form-label">Notas</label>
           <textarea id="itemNotes" class="form-input form-textarea" placeholder="Información adicional..." rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="itemComentarios" class="form-label">Comentarios (E2)</label>
+          <textarea id="itemComentarios" class="form-input form-textarea" placeholder="Comentario breve para este requerimiento..." rows="2" maxlength="500"></textarea>
         </div>
 
         <div class="form-group">
@@ -827,6 +856,28 @@
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Comentarios por Requerimiento Modal (E2) -->
+  <div class="modal-overlay" id="commentsOverlay" style="display:none;">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="commentsTitle">
+      <div class="modal-header">
+        <h2 id="commentsTitle">&#128172; Comentarios</h2>
+        <div class="modal-header-actions">
+          <button class="modal-close" id="commentsClose" aria-label="Cerrar">&times;</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="history-item-name" id="commentsItemName"></div>
+        <div class="comments-list" id="commentsList">
+          <div class="comments-empty">Sin comentarios a&uacute;n. Agrega el primero.</div>
+        </div>
+        <div class="comments-add">
+          <textarea id="commentsTextarea" class="form-input form-textarea" placeholder="Escribe un comentario para este requerimiento..." rows="2" maxlength="500"></textarea>
+          <button type="button" class="btn btn-primary comments-add-btn" id="commentsAddBtn">&#128172; Agregar comentario</button>
+        </div>
+      </div>
     </div>
   </div>
 

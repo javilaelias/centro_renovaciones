@@ -404,6 +404,24 @@ router.put('/:id', (req, res) => {
     return res.status(404).json({ success: false, error: 'Item no encontrado' });
   }
 
+  // E6: permisos por rol en los REQUERIMIENTOS (items sin fecha de vencimiento).
+  // Los analistas solo pueden cambiar el estado (notes) y la fecha de vencimiento
+  // (expiryDate); el resto de campos (nombre, categoría, costo, proveedor,
+  // alertas) es exclusivo del administrador. Las renovaciones con fecha se
+  // gestionan igual que antes para los analistas.
+  const isReqItem = !existing.expiryDate;
+  const isAdmin = req.user && req.user.role === 'admin';
+  if (isReqItem && !isAdmin) {
+    const sentKeys = Object.keys(req.body);
+    const forbidden = sentKeys.filter(k => k !== 'notes' && k !== 'expiryDate');
+    if (forbidden.length > 0) {
+      return res.status(403).json({
+        success: false,
+        error: `Solo el administrador puede modificar: ${forbidden.join(', ')}. Los analistas solo pueden cambiar estado y fecha.`
+      });
+    }
+  }
+
   const { name, category, expiryDate, cost, provider, notes, alertEmail, alertWhatsApp, alertTelegram } = req.body;
 
   // Validación de flujo secuencial: si se cambia el estado del requerimiento,

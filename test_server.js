@@ -259,6 +259,65 @@ test('CRUD de items: crear, leer, actualizar y eliminar', async () => {
   assert.equal(gone.status, 404);
 });
 
+// E6: permisos por rol en requerimientos (items sin fecha de vencimiento).
+// Los analistas solo pueden cambiar estado (notes) y fecha (expiryDate);
+// el resto de campos es exclusivo del admin (403). En renovaciones con
+// fecha, los analistas conservan la edición completa.
+test('E6: analista solo cambia estado/fecha en requerimientos (403 para el resto)', async () => {
+  // Registrar un analista con Gmail y obtener su token
+  const reg = await request('POST', '/api/auth/register', {
+    email: 'analista.e6@gmail.com',
+    password: 'secreto6',
+  });
+  assert.equal(reg.status, 201, 'El registro del analista debe devolver 201');
+  const analystToken = reg.data.data.token;
+  assert.ok(analystToken, 'El analista debe recibir un token');
+
+  // Crear un requerimiento (sin fecha) como admin
+  const created = await request('POST', '/api/items', {
+    name: 'REQ requerimiento E6',
+    category: 'equipment',
+    notes: 'REQ-2026-0001\nEstado: En trámite\nÁrea: OGTI',
+  }, authToken);
+  assert.equal(created.status, 201);
+  const reqId = created.data.data.id;
+
+  // El analista PUEDE cambiar el estado (notes)
+  const okNotes = await request('PUT', `/api/items/${reqId}`, {
+    notes: 'REQ-2026-0001\nEstado: Revisión OAB\nÁrea: OGTI',
+  }, analystToken);
+  assert.equal(okNotes.status, 200, 'El analista puede cambiar el estado (notes)');
+  assert.equal(okNotes.data.data.notes.includes('Revisión OAB'), true);
+
+  // Un analista NO puede editar el nombre/costo/etc. de un requerimiento (403)
+  const forbiddenName = await request('PUT', `/api/items/${reqId}`, { name: 'Hackeado' }, analystToken);
+  assert.equal(forbiddenName.status, 403, 'El analista no puede cambiar el nombre de un requerimiento');
+  const forbiddenCost = await request('PUT', `/api/items/${reqId}`, { cost: 9999 }, analystToken);
+  assert.equal(forbiddenCost.status, 403, 'El analista no puede cambiar el costo de un requerimiento');
+
+  // El analista NO puede eliminar un requerimiento (solo admin)
+  const forbiddenDelete = await request('DELETE', `/api/items/${reqId}`, null, analystToken);
+  assert.equal(forbiddenDelete.status, 403, 'El analista no puede eliminar un requerimiento');
+
+  // El analista PUEDE asignar fecha de vencimiento (expiryDate)
+  const okDate = await request('PUT', `/api/items/${reqId}`, { expiryDate: '2026-12-31' }, analystToken);
+  assert.equal(okDate.status, 200, 'El analista puede asignar la fecha de vencimiento');
+
+  // En una renovación con fecha, el analista SÍ puede editar (no restringido)
+  const ren = await request('POST', '/api/items', {
+    name: 'Renovación con fecha E6',
+    category: 'domain',
+    expiryDate: '2099-01-01',
+  }, authToken);
+  assert.equal(ren.status, 201);
+  const renEdit = await request('PUT', `/api/items/${ren.data.data.id}`, { name: 'Renovación editada por analista' }, analystToken);
+  assert.equal(renEdit.status, 200, 'El analista puede editar renovaciones con fecha');
+
+  // Limpiar
+  await request('DELETE', `/api/items/${reqId}`, null, authToken);
+  await request('DELETE', `/api/items/${ren.data.data.id}`, null, authToken);
+});
+
 test('Crear item sin nombre devuelve 400', async () => {
   const r = await request('POST', '/api/items', { category: 'domain', expiryDate: '2099-01-01' }, authToken);
   assert.equal(r.status, 400);

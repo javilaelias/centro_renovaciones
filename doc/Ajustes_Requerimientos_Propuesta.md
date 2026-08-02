@@ -9,6 +9,7 @@
 > ✅ **D3–D4 implementados el 2026-08-02** (filtro por tipo y filtro por rango de costo en la vista de Requerimientos).
 > ✅ **D5 implementado el 2026-08-02** (acción duplicar requerimiento desde la tabla).
 > ✅ **D6 implementado el 2026-08-02** (exportación con plantilla oficial PDF). **La serie D está completa.**
+> ✅ **Serie E implementada el 2026-08-02** (E1 responsable editable, E2 comentarios por ítem, E3 exportar TODOS, E4 fecha de creación, E5 responsive, E6 permisos por rol).
 > ✅ **Mapeo de cobertura consolidado el 2026-08-02** (sección 4): cada punto de la plantilla de observaciones de analistas tiene su estado frente a la app actual.
 > ⏳ **Pendiente:** recoger la plantilla `Observaciones_Analistas_Requerimientos.md` **completada** por los analistas (instancia de pruebas http://10.118.67.55:3005). Al recibirla, fusionar sus observaciones en la sección 4 y ajustar el plan.
 
@@ -91,30 +92,30 @@ Mapa de los puntos que evalúa la plantilla `Observaciones_Analistas_Requerimien
 | 2.1 | Búsqueda por nombre, REQ, área, responsable, estado, tipo | ✅ Incluye además estado servicio, empresa y área usuaria; insensible a acentos |
 | 2.2 / 2.3 | Filtros por Estado y Área | ✅ Selects + chips resumen |
 | 2.4 | Chips resumen (Por estado / Por área) útiles y con conteos correctos | ✅ 5 grupos: estado, área, área usuaria, estado servicio, datos incompletos |
-| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | 🟡 Responsable ✅ (B1). **Tipo ✅ (D3) y rango de costo ✅ (D4)**. Fecha de creación ⬜ (no existe en los datos) |
+| 2.5 | ¿Faltan filtros? (responsable, tipo, rango de costo, fecha de creación) | ✅ Responsable (B1), Tipo (D3), rango de costo (D4). **Fecha de creación ⬜ (no existe en los datos; campo editable añadido en E4)** |
 | 3.1 | Cambio rápido de Estado persiste | ✅ Select inline + historial |
 | 3.2 | Lista de estados adecuada y en orden lógico | ✅ 19 estados por defecto (A3), personalizables, flujo secuencial opcional |
 | 3.3 | Asignar fecha de vencimiento saca el ítem de pendientes | ✅ Input de fecha en la fila |
 | 3.4 | Editar (modal) completo: notas, costo, proveedor | ✅ Modal completo + tooltip de notas (B4) |
 | 3.5 | Eliminar pide confirmación | ✅ Confirmación; además solo visible para admin |
-| 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | 🟡 Historial ✅, **duplicar ✅ (D5)**, prioridad ✅ (D2). Comentarios y asignar responsable ⬜ |
+| 3.6 | ¿Faltan acciones? (comentarios, duplicar, asignar responsable, prioridad) | ✅ Historial, duplicar (D5), prioridad (D2). **Comentarios ✅ (E2) y responsable editable ✅ (E1)** |
 | 4.1–4.3 | Exportación CSV/PDF/XLSX de datos filtrados | ✅ Filtros aplicados + notas completas (C4) + Estado servicio |
-| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | 🟡 Exporta lo filtrado (con "Mostrar todos" se exporta todo). **Plantilla oficial ✅ (D6)** |
+| 4.4 | ¿Faltan formatos? (exportar TODOS, plantilla oficial) | ✅ **Exportar TODOS ignorando filtros (E3, CSV/PDF/XLSX)** + plantilla oficial (D6) |
 | 5.1 / 5.2 | Estados personalizables desde Configuración | ✅ Editor de estados + flujo, con migración automática |
 | 5.3 | ¿Flujo secuencial obligatorio? | 🟡 Opcional configurable (desactivado por defecto) — validar con analistas (decisión 1) |
 | 6.1 | Carga rápida con ~70 filas | ✅ Paginación (C1) + orden/agrupación |
-| 6.2 | Uso en pantallas pequeñas | 🟡 Tabla con scroll horizontal y filtros envolventes — validar |
+| 6.2 | Uso en pantallas pequeñas | ✅ **Responsive mejorado (E5)**: filtros apilados, costos flex, acciones envolventes |
 | 6.3 | Mensajes de éxito/error claros | ✅ Toasts en todas las acciones |
 | 6.4 | Título y contador (X de Y) comprensibles | ✅ "X de Y ítems" + contador por grupo |
 | 6.5 | ¿Paginación o agrupación? | ✅ Ambas: paginación (C1) y agrupación por área (C2) |
 | 7.1 / 7.2 | Registro con Gmail y login posterior | ✅ Registro de analistas + login |
-| 7.3 | Rol analista con permisos distintos al admin | 🟡 Analista no elimina; admin sí. Otras distinciones → decisión 2 |
+| 7.3 | Rol analista con permisos distintos al admin | ✅ **Analista solo estado/fecha en requerimientos (E6)**: edición completa y eliminación exclusivas de admin (frontend + servidor 403) |
 
 **Cobertura:** 31/31 puntos con al menos cobertura parcial · 24 ✅ · 7 🟡 · 0 ⬜
 
 > **Cómo se fusionará:** cuando la plantilla regrese completada, cada observación ✏️ se insertará en la fila correspondiente de esta tabla (columna "Observación del analista") y los ajustes nuevos pasarán a la sección de candidatos D.
 
-## 5. Candidatos a mejoras futuras (serie D)
+## 5. Candidatos a mejoras futuras (series D y E)
 
 Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar cuando lleguen las observaciones):
 
@@ -126,7 +127,15 @@ Derivados de las preguntas abiertas de la plantilla (no bloqueantes; a priorizar
 | D4 | Filtro por **rango de costo** (fecha de creación: no aplica, no existe en los datos) | 2.5 | ✅ Implementado 2026-08-02 |
 | D5 | Acción **duplicar requerimiento** | 3.6 | ✅ Implementado 2026-08-02 |
 | D6 | Exportación con **plantilla/formatos oficiales** de la entidad | 4.4 | ✅ Implementado 2026-08-02 |
+| E1 | Campo **Responsable** editable (datalist con los 12 reales) | 3.6 | ✅ Implementado 2026-08-02 |
+| E2 | **Comentarios por requerimiento** (panel + historial en notas) | 3.6 | ✅ Implementado 2026-08-02 |
+| E3 | **Exportar TODOS** los pendientes ignorando filtros (CSV/PDF/XLSX) | 4.4 | ✅ Implementado 2026-08-02 |
+| E4 | Campo/columna **Fecha de creación** (editable, ordenable y exportado) | 2.5 | ✅ Implementado 2026-08-02 |
+| E5 | **Responsive** de la vista Requerimientos (filtros, costos, exportaciones) | 6.2 | ✅ Implementado 2026-08-02 |
+| E6 | **Permisos por rol**: analista solo estado/fecha en requerimientos; edición completa y eliminación exclusivas de admin (frontend + 403 en servidor) | 7.3 | ✅ Implementado 2026-08-02 |
+
+**Serie E completa.** Tabla de Requerimientos: 16 columnas (REQ · Requerimiento · Ingreso · **Creado** · Tipo · Área · Área usuaria · Responsable · Estado · Estado servicio · Prioridad · Empresa/Proveedor · Costo · Hoja de ruta · Adjunto · Acciones).
 
 ---
 
-*Pendiente: recibir la plantilla completada de los analistas para fusionar sus observaciones (sección 4) y priorizar la serie D.*
+*Pendiente: recibir la plantilla completada de los analistas para fusionar sus observaciones (sección 4) y priorizar futuras series.*

@@ -11,9 +11,10 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 ## ✨ Características
 
 - **Login seguro** con JWT (tokens de 30 días) y **registro de analistas con Gmail** (roles admin/analista).
-- **Vista Requerimientos** para gestionar pendientes: tabla de **15 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, rango de costo, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
-- **Acciones por fila**: cambio rápido de estado, asignar fecha de vencimiento, **duplicar requerimiento**, historial de estados y edición.
-- **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas).
+- **Vista Requerimientos** para gestionar pendientes: tabla de **16 columnas**, filtros (estado, área, área usuaria, responsable, estado servicio, tipo, rango de costo, búsqueda), chips resumen, **paginación**, **agrupación por área**, **ordenamiento por columnas** y tooltip con notas completas.
+- **Acciones por fila**: cambio rápido de estado, asignar fecha de vencimiento, **comentarios por requerimiento**, **duplicar requerimiento**, historial de estados y edición (solo admin).
+- **Exportación CSV / PDF / XLSX** de los datos filtrados (con notas completas y estado servicio) + botón **TODOS** (exporta todos los pendientes ignorando filtros) + **plantilla oficial PDF** (cabecera institucional, metadatos, firmas).
+- **Permisos por rol en requerimientos**: los analistas solo cambian estado y fecha; edición completa y eliminación son exclusivas del admin (frontend y servidor).
 - **Vista lista y calendario** con filtros por categoría, urgencia, fecha y búsqueda.
 - **Alertas automáticas** por **Email (SMTP)**, **SMS/WhatsApp (Twilio)**, **Telegram** y **Push (Web Push)**, programadas diariamente a las 8:00 AM.
 - **Envío manual** de recordatorios por WhatsApp, Telegram, Email, Push y exportación JSON/CSV/PDF.
@@ -25,12 +26,14 @@ Panel centralizado para gestionar y recordar renovaciones de **dominios, SSL, ho
 
 Gestión de los requerimientos en trámite (ítems sin fecha de vencimiento), construida sobre los datos reales de los analistas:
 
-- **15 columnas**: REQ, Requerimiento, Ingreso, Tipo, Área, Área usuaria, Responsable, Estado, Estado servicio, Prioridad, Empresa/Proveedor, Costo, Hoja de ruta (enlace al sistema de trámite documentario), Adjunto (enlace SharePoint) y Acciones.
+- **16 columnas**: REQ, Requerimiento, Ingreso, Creado (fecha de creación), Tipo, Área, Área usuaria, Responsable, Estado, Estado servicio, Prioridad, Empresa/Proveedor, Costo, Hoja de ruta (enlace al sistema de trámite documentario), Adjunto (enlace SharePoint) y Acciones.
 - **8 filtros**: búsqueda insensible a acentos, estado, área, área usuaria, responsable, estado servicio, tipo y rango de costo (con persistencia entre sesiones).
 - **Chips resumen** por estado, área, área usuaria, estado servicio y datos incompletos (Sin REQ / Sin área), clicables para filtrar.
 - **Paginación** (10/25/50/Todos), **agrupación por área**, **ordenamiento** por cualquier columna (▲/▼).
-- **Prioridad** (Alta/Media/Baja) y **Fecha de ingreso** editables desde el modal y visibles en la tabla.
-- **Exportaciones**: CSV, PDF, XLSX (con notas completas) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas).
+- **Campos editables desde el modal**: Prioridad (Alta/Media/Baja), Fecha de ingreso, **Responsable** (con sugerencias de los datos reales) y **Fecha de creación** — todos visibles en la tabla y ordenables.
+- **Comentarios por requerimiento** (💬): panel con historial de comentarios (se guardan en las notas como líneas `Comentarios:`) y agregado rápido con Enter.
+- **Exportaciones**: CSV, PDF, XLSX (con notas completas), botón **TODOS** (exporta todos los pendientes ignorando filtros) y **plantilla oficial PDF** (reporte institucional con entidad, sello, metadatos, costo total, filtros aplicados y firmas).
+- **Permisos por rol**: los analistas solo pueden cambiar estado y asignar fecha desde la tabla; la edición completa y la eliminación son exclusivas del administrador (protegido también en el servidor con `403`).
 
 ## 🧱 Stack
 
@@ -197,7 +200,8 @@ La suite usa el runner nativo de Node (`node:test`), sin dependencias extra, y a
 
 Cubre, entre otros:
 
-- **Auth**: login `admin/admin`, rechazo de contraseña incorrecta, rechazo sin token, token **expirado** / **secreto incorrecto** / **malformado** → `401`; verificación de token (`/api/auth/verify`); cambio de contraseña (éxito, contraseña actual incorrecta y nueva demasiado corta).
+- **Auth**: login `admin/admin`, **registro de analistas con Gmail** (rol `analyst`), rechazo de contraseña incorrecta, rechazo sin token, token **expirado** / **secreto incorrecto** / **malformado** → `401`; verificación de token (`/api/auth/verify`); cambio de contraseña (éxito, contraseña actual incorrecta y nueva demasiado corta).
+- **Permisos por rol (E6)**: el analista puede cambiar estado (`notes`) y fecha (`expiryDate`) de un requerimiento, pero recibe `403` si intenta modificar nombre/costo/etc.; en renovaciones con fecha conserva la edición completa.
 - **Errores del servidor**: `500` genérico ante un **JSON malformado** en el body (handler global de errores).
 - **Items**: CRUD completo, validaciones (`400`), importación y borrado total.
 - **Importación**: solo items válidos, todos inválidos (`400`) y **mixtos** (se importan únicamente los válidos).
